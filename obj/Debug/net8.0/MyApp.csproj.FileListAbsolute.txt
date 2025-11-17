@@ -205,3 +205,4 @@ C:\Users\user\RiderProjects\MyApp\obj\Debug\net8.0\refint\MyApp.dll
 C:\Users\user\RiderProjects\MyApp\obj\Debug\net8.0\MyApp.pdb
 C:\Users\user\RiderProjects\MyApp\obj\Debug\net8.0\MyApp.genruntimeconfig.cache
 C:\Users\user\RiderProjects\MyApp\obj\Debug\net8.0\ref\MyApp.dll
+C:\Users\user\RiderProjects\MyApp\obj\Debug\net8.0\MyApp.sourcelink.json
