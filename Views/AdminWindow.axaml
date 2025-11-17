@@ -1,0 +1,37 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="MyApp.Views.AdminWindow"
+        Title="AdminWindow">
+    <TabControl>
+        <TabItem Header="Сотрудники">
+            <StackPanel Spacing="10" Margin="10">
+                <Button Content="Добавить сотрудника" Click="AddEmployee_Click" />
+                <ListBox x:Name="EmployeesListBox" />
+                <Button Content="Уволить" Click="FireEmployee_Click" />
+                <Button Content="Просмотр/Редактирование" Click="ViewEmployee_Click" />
+            </StackPanel>
+        </TabItem>
+        <TabItem Header="Смены">
+            <StackPanel Spacing="10" Margin="10">
+                <Button Content="Создать смену" Click="CreateShift_Click" />
+                <ListBox x:Name="ShiftsListBox" />
+                <Button Content="Назначить в смену" Click="AssignToShift_Click" />
+            </StackPanel>
+        </TabItem>
+        <TabItem Header="Заказы">
+            <StackPanel Spacing="10" Margin="10">
+                <ListBox x:Name="OrdersListBox" />
+                <Button Content="Редактировать заказ" Click="EditOrder_Click" />
+            </StackPanel>
+        </TabItem>
+        <TabItem Header="Отчёты">
+            <StackPanel Spacing="10" Margin="10">
+                <Button Content="Отчёт по заказам (PDF)" Click="GenerateOrdersReportPdf_Click" />
+                <Button Content="Отчёт по выручке (XLSX)" Click="GenerateRevenueReportXlsx_Click" />
+            </StackPanel>
+        </TabItem>
+    </TabControl>
+</Window>

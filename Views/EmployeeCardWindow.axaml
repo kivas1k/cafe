@@ -1,0 +1,60 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:input="using:Avalonia.Input"
+        xmlns:views="clr-namespace:MyApp.Views"
+        x:Class="MyApp.Views.EmployeeCardWindow"
+        x:DataType="views:EmployeeCardWindow"
+        Title="Карточка сотрудника"
+        Width="460" Height="680">
+
+    <StackPanel Margin="25" Spacing="15">
+        <TextBlock Text="Полное имя:" FontWeight="SemiBold"/>
+        <TextBox x:Name="FullNameTextBox"/>
+
+        <TextBlock Text="Логин:" FontWeight="SemiBold"/>
+        <TextBox x:Name="UsernameTextBox"/>
+
+        <TextBlock Text="Пароль:" FontWeight="SemiBold"/>
+        <TextBox x:Name="PasswordTextBox" PasswordChar="*"/>
+
+        <TextBlock Text="Роль:" FontWeight="SemiBold"/>
+        <ComboBox x:Name="RoleComboBox"
+                  ItemsSource="{Binding Roles}"
+                  SelectedItem="{Binding SelectedRole}"/>
+
+        <TextBlock Text="Фото сотрудника:" FontWeight="SemiBold"/>
+        <Border x:Name="PhotoDropBorder"
+                input:DragDrop.AllowDrop="True"
+                Background="#F5F5F5"
+                BorderBrush="Gray"
+                BorderThickness="2"
+                CornerRadius="8"
+                Height="120"
+                Padding="10">
+            <TextBlock Text="Перетащите фото сюда"
+                       TextWrapping="Wrap" TextAlignment="Center"
+                       VerticalAlignment="Center"/>
+        </Border>
+        <Button Content="Выбрать фото" Click="AddPhoto_Click"/>
+
+        <TextBlock Text="Скан договора:" FontWeight="SemiBold"/>
+        <Border x:Name="ContractDropBorder"
+                input:DragDrop.AllowDrop="True"
+                Background="#F5F5F5"
+                BorderBrush="Gray"
+                BorderThickness="2"
+                CornerRadius="8"
+                Height="120"
+                Padding="10">
+            <TextBlock Text="Перетащите скан сюда"
+                       TextWrapping="Wrap" TextAlignment="Center"
+                       VerticalAlignment="Center"/>
+        </Border>
+        <Button Content="Выбрать договор" Click="AddContract_Click"/>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,30">
+            <Button Content="Сохранить" Click="Save_Click" Width="110"/>
+            <Button Content="Отмена" Click="Cancel_Click" Width="110"/>
+        </StackPanel>
+    </StackPanel>
+</Window>
