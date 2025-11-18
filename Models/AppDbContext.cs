@@ -1,6 +1,9 @@
 using System;
 using System.IO;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace MyApp.Models;
 
@@ -12,16 +15,47 @@ public class AppDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        var dbPath = Path.Combine(AppContext.BaseDirectory, "cafe.db");
+        // Путь к корневой папке проекта
+        var projectRoot = GetProjectRootDirectory();
+        var dbPath = Path.Combine(projectRoot, "Data", "cafe.db");
+        
+        // Создаем папку Data, если она не существует
+        var dataDir = Path.GetDirectoryName(dbPath);
+        if (!Directory.Exists(dataDir))
+        {
+            Directory.CreateDirectory(dataDir);
+        }
+        
+        Debug.WriteLine($"Database path: {dbPath}");
         optionsBuilder.UseSqlite($"Data Source={dbPath}");
+    }
+
+    private string GetProjectRootDirectory()
+    {
+        // Получаем текущую директорию исполняемого файла
+        var currentDir = Directory.GetCurrentDirectory();
+        
+        // Ищем корень проекта (где находится .csproj файл)
+        var directory = new DirectoryInfo(currentDir);
+        while (directory != null && !directory.GetFiles("*.csproj").Any())
+        {
+            directory = directory.Parent;
+        }
+        
+        return directory?.FullName ?? currentDir;
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<User>().HasData(
-            new User { Id = 1, Username = "admin", Password = "admin123", Role = "Admin", FullName = "Администратор" },
-            new User { Id = 2, Username = "waiter", Password = "123", Role = "Waiter", FullName = "Иван Иванов" },
-            new User { Id = 3, Username = "cook", Password = "123", Role = "Cook", FullName = "Пётр Петров" }
-        );
+        modelBuilder.Entity<Shift>()
+            .Property(s => s.EmployeeIds)
+            .HasConversion(
+                v => string.Join(',', v),
+                v => string.IsNullOrEmpty(v) 
+                    ? new List<int>() 
+                    : v.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                        .Select(int.Parse)
+                        .ToList()
+            );
     }
 }

@@ -17,7 +17,7 @@ public partial class LoginWindow : Window
     private async void LoginButton_Click(object? sender, RoutedEventArgs e)
     {
         var username = UsernameTextBox.Text?.Trim();
-        var password = PasswordTextBox.Text; // Используем TextBox.Text
+        var password = PasswordTextBox.Text;
 
         if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
         {
@@ -28,7 +28,6 @@ public partial class LoginWindow : Window
         try
         {
             using var db = new AppDbContext();
-            db.Database.EnsureCreated();
 
             var user = await db.Users
                 .FirstOrDefaultAsync(u => 

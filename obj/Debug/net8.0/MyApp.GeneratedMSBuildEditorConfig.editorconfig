@@ -15,24 +15,24 @@ build_property.PlatformNeutralAssembly =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = MyApp
-build_property.ProjectDir = C:\Users\user\RiderProjects\MyApp\
+build_property.ProjectDir = C:\Users\user\RiderProjects\cafe\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 
-[C:/Users/user/RiderProjects/MyApp/App.axaml]
+[C:/Users/user/RiderProjects/cafe/App.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
 
-[C:/Users/user/RiderProjects/MyApp/Views/AdminWindow.axaml]
+[C:/Users/user/RiderProjects/cafe/Views/AdminWindow.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
 
-[C:/Users/user/RiderProjects/MyApp/Views/CookWindow.axaml]
+[C:/Users/user/RiderProjects/cafe/Views/CookWindow.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
 
-[C:/Users/user/RiderProjects/MyApp/Views/EmployeeCardWindow.axaml]
+[C:/Users/user/RiderProjects/cafe/Views/EmployeeCardWindow.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
 
-[C:/Users/user/RiderProjects/MyApp/Views/LoginWindow.axaml]
+[C:/Users/user/RiderProjects/cafe/Views/LoginWindow.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
 
-[C:/Users/user/RiderProjects/MyApp/Views/WaiterWindow.axaml]
+[C:/Users/user/RiderProjects/cafe/Views/WaiterWindow.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml

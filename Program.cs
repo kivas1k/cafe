@@ -15,5 +15,4 @@ sealed class Program
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .LogToTrace();
-
 }
