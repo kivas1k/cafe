@@ -1,9 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Microsoft.EntityFrameworkCore;
 using MyApp.Models;
 using MyApp.Services;
-using Microsoft.EntityFrameworkCore;
-using System.Linq;
 using System;
 
 namespace MyApp.Views;
@@ -18,7 +17,7 @@ public partial class LoginWindow : Window
     private async void LoginButton_Click(object? sender, RoutedEventArgs e)
     {
         var username = UsernameTextBox.Text?.Trim();
-        var password = PasswordTextBox.Text;
+        var password = PasswordTextBox.Text; // Используем TextBox.Text
 
         if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
         {
@@ -29,14 +28,13 @@ public partial class LoginWindow : Window
         try
         {
             using var db = new AppDbContext();
-            
-            // ← ЭТО ГЛАВНОЕ: создаём базу, если её нет
             db.Database.EnsureCreated();
 
             var user = await db.Users
-                .FirstOrDefaultAsync(u => u.Username == username && 
-                                         u.Password == password && 
-                                         !u.IsFired);
+                .FirstOrDefaultAsync(u => 
+                    u.Username == username &&
+                    u.Password == password &&
+                    !u.IsFired);
 
             if (user == null)
             {
@@ -44,7 +42,6 @@ public partial class LoginWindow : Window
                 return;
             }
 
-            // Открываем нужное окно
             Window mainWindow = user.Role switch
             {
                 "Admin" => new AdminWindow(user),
@@ -54,7 +51,7 @@ public partial class LoginWindow : Window
             };
 
             mainWindow.Show();
-            this.Close();
+            Close();
         }
         catch (Exception ex)
         {

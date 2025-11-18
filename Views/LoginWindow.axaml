@@ -1,17 +1,85 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:MyApp.ViewModels"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="200"
         x:Class="MyApp.Views.LoginWindow"
-        Title="Login">
+        Icon="avares://MyApp/Assets/avalonia-logo.ico"
+        Width="600"
+        Height="560"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        RequestedThemeVariant="Light"
+        Background="#F2F2F5"
+        Title="Авторизация">
 
-    <StackPanel Margin="20" Spacing="10">
-        <TextBlock Text="Логин:" />
-        <TextBox x:Name="UsernameTextBox" />
-        <TextBlock Text="Пароль:" />
-        <TextBox x:Name="PasswordTextBox" PasswordChar="*" />
-        <Button Content="Войти" Click="LoginButton_Click" />
-    </StackPanel>
+    <Grid>
+        <!-- Увеличенная центральная карточка -->
+        <Border Width="500"
+                Padding="40"
+                CornerRadius="20"
+                Background="White"
+                BorderBrush="#E6E6E6"
+                BorderThickness="1"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+
+            <StackPanel Spacing="18">
+
+                <TextBlock Text="Добро пожаловать"
+                           FontSize="28"
+                           HorizontalAlignment="Center"
+                           FontWeight="SemiBold"
+                           Foreground="#333"
+                           Margin="0 0 0 10"/>
+
+                <!-- Логин -->
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Логин"
+                               Foreground="#555"
+                               FontSize="14"/>
+                    <TextBox x:Name="UsernameTextBox"
+                             MinHeight="44"
+                             Margin="0"
+                             Background="#FAFAFA"
+                             BorderBrush="#D9D9D9"
+                             BorderThickness="1"
+                             CornerRadius="8"
+                             Watermark="Введите логин"
+                             Padding="12,0"
+                             VerticalContentAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Пароль -->
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Пароль"
+                               Foreground="#555"
+                               FontSize="14"/>
+                    <TextBox x:Name="PasswordTextBox"
+                             MinHeight="44"
+                             Margin="0"
+                             Background="#FAFAFA"
+                             BorderBrush="#D9D9D9"
+                             BorderThickness="1"
+                             CornerRadius="8"
+                             PasswordChar="•"
+                             Watermark="Введите пароль"
+                             Padding="12,0"
+                             VerticalContentAlignment="Center"/>
+                </StackPanel>
+
+                <Button Content="Войти"
+                        Height="52"
+                        Margin="0,6,0,0"
+                        FontSize="22"                 
+                        FontWeight="Bold"            
+                        Foreground="White"
+                        Background="#4CAF50"
+                        HorizontalAlignment="Stretch"
+                        CornerRadius="10"
+                        Click="LoginButton_Click">
+                    <Button.HorizontalContentAlignment>Center</Button.HorizontalContentAlignment>
+                    <Button.VerticalContentAlignment>Center</Button.VerticalContentAlignment> <!-- центрирование по вертикали -->
+                </Button>
+
+            </StackPanel>
+        </Border>
+    </Grid>
 </Window>
