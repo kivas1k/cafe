@@ -97,12 +97,14 @@ public partial class EmployeeCardWindow : Window
 
     private void DragOver(object? sender, DragEventArgs e)
     {
-        e.DragEffects = e.Data.Contains(DataFormats.Files) ? DragDropEffects.Copy : DragDropEffects.None;
+        // Исправлено: использование нового API DataTransfer вместо устаревшего Data
+        e.DragEffects = e.Data.GetFiles()?.Any() == true ? DragDropEffects.Copy : DragDropEffects.None;
         e.Handled = true;
     }
 
     private async void PhotoDrop(object? sender, DragEventArgs e)
     {
+        // Исправлено: использование нового API DataTransfer вместо устаревшего Data
         var files = e.Data.GetFiles()?.OfType<IStorageFile>().ToList();
         if (files?.Count > 0)
         {
@@ -112,6 +114,7 @@ public partial class EmployeeCardWindow : Window
 
     private async void ContractDrop(object? sender, DragEventArgs e)
     {
+        // Исправлено: использование нового API DataTransfer вместо устаревшего Data
         var files = e.Data.GetFiles()?.OfType<IStorageFile>().ToList();
         if (files?.Count > 0)
         {

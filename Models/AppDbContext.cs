@@ -21,7 +21,7 @@ public class AppDbContext : DbContext
         
         // Создаем папку Data, если она не существует
         var dataDir = Path.GetDirectoryName(dbPath);
-        if (!Directory.Exists(dataDir))
+        if (!string.IsNullOrEmpty(dataDir) && !Directory.Exists(dataDir))
         {
             Directory.CreateDirectory(dataDir);
         }

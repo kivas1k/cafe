@@ -1,148 +1,229 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:input="using:Avalonia.Input"
         x:Class="MyApp.Views.EmployeeCardWindow"
         Title="Карточка сотрудника"
-        Width="500" Height="650"
-        MinWidth="500" MinHeight="650"
-        WindowStartupLocation="CenterOwner">
-    
-    <Grid Margin="20" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,*,Auto">
+        WindowState="Maximized"
+        WindowStartupLocation="CenterOwner"
+        Background="#F2F2F5">
+
+    <!-- Стили внутри окна -->
+    <Window.Styles>
+
+        <!-- Hover без изменения цвета -->
+        <Style Selector="Button:pointerover">
+            <Setter Property="Background"
+                    Value="{Binding Background, RelativeSource={RelativeSource Self}}"/>
+            <Setter Property="Opacity" Value="1"/>
+        </Style>
+
+        <!-- Нажатие — легкое затемнение -->
+        <Style Selector="Button:pressed">
+            <Setter Property="Opacity" Value="0.95"/>
+        </Style>
+
+    </Window.Styles>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
         <!-- Заголовок -->
-        <TextBlock Grid.Row="0" x:Name="WindowTitleText" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,10"/>
-        
-        <!-- Кнопки -->
-        <Grid Grid.Row="1" Margin="0,0,0,20">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Button Grid.Column="1" Content="Сохранить" Click="Save_Click" Width="120" Height="35" 
-                    Background="#4CAF50" Foreground="White" FontWeight="Bold" Margin="0,0,10,0"/>
-            <Button Grid.Column="2" Content="Отмена" Click="Cancel_Click" Width="120" Height="35" 
-                    Background="#666" Foreground="White"/>
-        </Grid>
+        <TextBlock Grid.Row="0" x:Name="WindowTitleText"
+                   FontSize="22" FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   Margin="0 0 0 15"
+                   Foreground="#333"/>
 
         <!-- Основная информация -->
-        <Border Grid.Row="2" BorderBrush="#E0E0E0" BorderThickness="0,0,0,1" Padding="0,0,0,10">
-            <TextBlock Text="Основная информация" FontWeight="SemiBold" FontSize="14" Foreground="#666"/>
-        </Border>
+        <TextBlock Grid.Row="1"
+                   Text="Основная информация"
+                   FontWeight="SemiBold"
+                   FontSize="16"
+                   Foreground="#666"
+                   Margin="0 0 0 10"/>
 
-        <!-- Полное имя -->
-        <Grid Grid.Row="3" Margin="0,5,0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="120"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="Полное имя:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-            <TextBox Grid.Column="1" x:Name="FullNameTextBox" Height="35" Padding="10,0" 
+        <!-- Full name -->
+        <StackPanel Grid.Row="2" Spacing="4" Margin="0 0 0 12">
+            <TextBlock Text="Полное имя:" FontWeight="SemiBold" FontSize="14" Foreground="#555"/>
+            <TextBox x:Name="FullNameTextBox" Height="40" Padding="12,0"
+                     Background="#FAFAFA" BorderBrush="#D9D9D9" BorderThickness="1"
+                     CornerRadius="8" VerticalContentAlignment="Center"
                      Watermark="Введите ФИО сотрудника"/>
-        </Grid>
+        </StackPanel>
 
-        <!-- Логин -->
-        <Grid Grid.Row="4" Margin="0,0,0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="120"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="Логин:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-            <TextBox Grid.Column="1" x:Name="UsernameTextBox" Height="35" Padding="10,0" 
+        <!-- Username -->
+        <StackPanel Grid.Row="3" Spacing="4" Margin="0 0 0 12">
+            <TextBlock Text="Логин:" FontWeight="SemiBold" FontSize="14" Foreground="#555"/>
+            <TextBox x:Name="UsernameTextBox" Height="40" Padding="12,0"
+                     Background="#FAFAFA" BorderBrush="#D9D9D9" BorderThickness="1"
+                     CornerRadius="8" VerticalContentAlignment="Center"
                      Watermark="Введите логин для входа"/>
-        </Grid>
+        </StackPanel>
 
-        <!-- Пароль -->
-        <Grid Grid.Row="5" Margin="0,0,0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="120"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="Пароль:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-            <TextBox Grid.Column="1" x:Name="PasswordTextBox" Height="35" Padding="10,0" 
-                     PasswordChar="•" Watermark="Введите пароль"/>
-        </Grid>
+        <!-- Password -->
+        <StackPanel Grid.Row="4" Spacing="4" Margin="0 0 0 12">
+            <TextBlock Text="Пароль:" FontWeight="SemiBold" FontSize="14" Foreground="#555"/>
+            <TextBox x:Name="PasswordTextBox" Height="40" Padding="12,0"
+                     Background="#FAFAFA" BorderBrush="#D9D9D9" BorderThickness="1"
+                     CornerRadius="8" VerticalContentAlignment="Center"
+                     PasswordChar="•"
+                     Watermark="Введите пароль"/>
+        </StackPanel>
 
-        <!-- Роль -->
-        <Grid Grid.Row="6" Margin="0,0,0,20">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="120"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="Роль:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-            <ComboBox Grid.Column="1" x:Name="RoleComboBox" Height="35" Padding="10,0"/>
-        </Grid>
+        <!-- Role -->
+        <StackPanel Grid.Row="5" Spacing="4" Margin="0 0 0 25">
+            <TextBlock Text="Роль:" FontWeight="SemiBold" FontSize="14" Foreground="#555"/>
+            <ComboBox x:Name="RoleComboBox" Height="40" Padding="10,0"
+                      Background="#FAFAFA" BorderBrush="#D9D9D9" BorderThickness="1"
+                      CornerRadius="8"/>
+        </StackPanel>
 
-        <!-- Файлы -->
-        <Border Grid.Row="7" BorderBrush="#E0E0E0" BorderThickness="0,0,0,1" Padding="0,0,0,10">
-            <TextBlock Text="Документы" FontWeight="SemiBold" FontSize="14" Foreground="#666"/>
-        </Border>
+        <!-- Документы -->
+        <TextBlock Grid.Row="6"
+                   Text="Документы"
+                   FontWeight="SemiBold"
+                   FontSize="16"
+                   Foreground="#666"
+                   Margin="0 0 0 10"/>
 
-        <!-- Фото -->
-        <Grid Grid.Row="8" Margin="0,10,0,10">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" Text="Фото сотрудника:" FontWeight="SemiBold" Margin="0,0,0,5"/>
-            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10">
-                <Border x:Name="PhotoDropBorder"
-                        input:DragDrop.AllowDrop="True"
-                        Background="LightGray"
-                        BorderBrush="Gray"
-                        BorderThickness="2"
+        <!-- Photo -->
+        <StackPanel Grid.Row="7" Orientation="Horizontal" Spacing="15" Margin="0 5 0 15">
+            <Border x:Name="PhotoDropBorder"
+                    Width="130" Height="130"
+                    Background="LightGray"
+                    BorderBrush="Gray"
+                    BorderThickness="2"
+                    CornerRadius="12"
+                    Cursor="Hand"
+                    DragDrop.AllowDrop="True">
+                <TextBlock x:Name="PhotoTextBlock"
+                           Text="Перетащите&#x0a;фото сюда"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           Margin="10"/>
+            </Border>
+
+            <StackPanel VerticalAlignment="Center" Spacing="8">
+
+                <!-- Select photo -->
+                <Button Content="Выбрать фото"
+                        Click="AddPhoto_Click"
+                        Width="130" Height="38"
+                        Background="#2196F3"
+                        Foreground="White"
+                        FontWeight="SemiBold"
+                        CornerRadius="8"/>
+
+                <!-- Remove photo -->
+                <Button x:Name="RemovePhotoButton"
+                        Content="Удалить фото"
+                        Click="RemovePhoto_Click"
+                        Width="130" Height="38"
+                        Background="#f44336"
+                        Foreground="White"
+                        FontWeight="SemiBold"
                         CornerRadius="8"
-                        Width="120" Height="120"
-                        Cursor="Hand">
-                    <TextBlock x:Name="PhotoTextBlock"
-                               Text="Перетащите&#10;фото сюда"
-                               TextWrapping="Wrap" 
-                               TextAlignment="Center"
-                               VerticalAlignment="Center"
-                               HorizontalAlignment="Center"
-                               Margin="10"/>
-                </Border>
-                <StackPanel VerticalAlignment="Center" Spacing="5">
-                    <Button Content="Выбрать фото" Click="AddPhoto_Click" Width="120"/>
-                    <Button x:Name="RemovePhotoButton" Content="Удалить фото" Click="RemovePhoto_Click" Width="120" 
-                            Background="#FF4444" Foreground="White" IsVisible="False"/>
-                </StackPanel>
+                        IsVisible="False"/>
             </StackPanel>
-        </Grid>
+        </StackPanel>
 
-        <!-- Договор -->
-        <Grid Grid.Row="9" Margin="0,0,0,20">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" Text="Трудовой договор:" FontWeight="SemiBold" Margin="0,0,0,5"/>
-            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10">
+        <!-- Contract + Buttons -->
+        <Grid Grid.Row="8" Margin="0 0 0 25">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Contract -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="15">
                 <Border x:Name="ContractDropBorder"
-                        input:DragDrop.AllowDrop="True"
+                        Width="130" Height="130"
                         Background="LightGray"
                         BorderBrush="Gray"
                         BorderThickness="2"
-                        CornerRadius="8"
-                        Width="120" Height="120"
-                        Cursor="Hand">
+                        CornerRadius="12"
+                        Cursor="Hand"
+                        DragDrop.AllowDrop="True">
                     <TextBlock x:Name="ContractTextBlock"
-                               Text="Перетащите&#10;договор сюда"
-                               TextWrapping="Wrap" 
+                               Text="Перетащите&#x0a;договор сюда"
+                               TextWrapping="Wrap"
                                TextAlignment="Center"
                                VerticalAlignment="Center"
                                HorizontalAlignment="Center"
                                Margin="10"/>
                 </Border>
-                <StackPanel VerticalAlignment="Center" Spacing="5">
-                    <Button Content="Выбрать договор" Click="AddContract_Click" Width="120"/>
-                    <Button x:Name="RemoveContractButton" Content="Удалить договор" Click="RemoveContract_Click" Width="120"
-                            Background="#FF4444" Foreground="White" IsVisible="False"/>
+
+                <StackPanel VerticalAlignment="Center" Spacing="8">
+
+                    <Button Content="Выбрать договор"
+                            Click="AddContract_Click"
+                            Width="130" Height="38"
+                            Background="#2196F3"
+                            Foreground="White"
+                            FontWeight="SemiBold"
+                            CornerRadius="8"/>
+
+                    <Button x:Name="RemoveContractButton"
+                            Content="Удалить договор"
+                            Click="RemoveContract_Click"
+                            Width="130" Height="38"
+                            Background="#f44336"
+                            Foreground="White"
+                            FontWeight="SemiBold"
+                            CornerRadius="8"
+                            IsVisible="False"/>
                 </StackPanel>
+            </StackPanel>
+
+            <!-- Save + Cancel -->
+            <StackPanel Grid.Column="2"
+                        Orientation="Vertical"
+                        Spacing="15"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Margin="20 0 0 0">
+
+                <Button Content="Сохранить"
+                        Click="Save_Click"
+                        Width="150" Height="50"
+                        Background="#4CAF50"
+                        Foreground="White"
+                        FontWeight="Bold"
+                        FontSize="16"
+                        CornerRadius="10"/>
+
+                <Button Content="Отмена"
+                        Click="Cancel_Click"
+                        Width="150" Height="50"
+                        Background="#666"
+                        Foreground="White"
+                        FontSize="16"
+                        CornerRadius="10"/>
             </StackPanel>
         </Grid>
 
-        <!-- Сообщения об ошибках -->
-        <TextBlock Grid.Row="10" x:Name="ErrorTextBlock" Foreground="Red" TextWrapping="Wrap" 
-                   Margin="0,10,0,10" MaxHeight="50" TextAlignment="Center"/>
+        <!-- Ошибки -->
+        <TextBlock Grid.Row="9" x:Name="ErrorTextBlock"
+                   Foreground="Red"
+                   FontWeight="Bold"
+                   TextWrapping="Wrap"
+                   TextAlignment="Center"
+                   VerticalAlignment="Top"
+                   MaxHeight="60"
+                   Margin="0 10 0 10"/>
     </Grid>
 </Window>

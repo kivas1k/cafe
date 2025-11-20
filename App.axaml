@@ -2,14 +2,32 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="MyApp.App"
              xmlns:local="using:MyApp"
-             RequestedThemeVariant="Default">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+             RequestedThemeVariant="Light">
 
     <Application.DataTemplates>
         <local:ViewLocator/>
     </Application.DataTemplates>
-  
+
     <Application.Styles>
-        <FluentTheme />
+        
+        <SimpleTheme/>
+        
+        <Style Selector="Button">
+            <Setter Property="Transitions">
+                <Transitions/>
+            </Setter>
+        </Style>
+        
+        <Style Selector="Button:pointerover">
+            <Setter Property="Background" Value="{Binding Background, RelativeSource={RelativeSource Self}}"/>
+            <Setter Property="BorderBrush" Value="{Binding BorderBrush, RelativeSource={RelativeSource Self}}"/>
+            <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource Self}}"/>
+        </Style>
+
+        <!-- Pressed слегка затемняет -->
+        <Style Selector="Button:pressed">
+            <Setter Property="Opacity" Value="0.95"/>
+        </Style>
+
     </Application.Styles>
 </Application>
