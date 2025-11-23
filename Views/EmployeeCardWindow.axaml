@@ -127,6 +127,17 @@
                         FontWeight="SemiBold"
                         CornerRadius="8"/>
 
+                <!-- View photo -->
+                <Button x:Name="ViewPhotoButton"
+                        Content="Просмотреть фото"
+                        Click="ViewPhoto_Click"
+                        Width="130" Height="38"
+                        Background="#FF9800"
+                        Foreground="White"
+                        FontWeight="SemiBold"
+                        CornerRadius="8"
+                        IsVisible="False"/>
+
                 <!-- Remove photo -->
                 <Button x:Name="RemovePhotoButton"
                         Content="Удалить фото"
@@ -177,6 +188,18 @@
                             FontWeight="SemiBold"
                             CornerRadius="8"/>
 
+                    <!-- Download contract -->
+                    <Button x:Name="DownloadContractButton"
+                            Content="Скачать договор"
+                            Click="DownloadContract_Click"
+                            Width="130" Height="38"
+                            Background="#9C27B0"
+                            Foreground="White"
+                            FontWeight="SemiBold"
+                            CornerRadius="8"
+                            IsVisible="False"/>
+
+                    <!-- Remove contract -->
                     <Button x:Name="RemoveContractButton"
                             Content="Удалить договор"
                             Click="RemoveContract_Click"

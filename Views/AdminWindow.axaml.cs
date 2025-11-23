@@ -60,7 +60,7 @@ namespace MyApp.Views
             }
             catch (Exception ex)
             {
-                await MessageBox.Show(this, $"Ошибка загрузки данных: {ex.Message}");
+                await ShowMessageAsync($"Ошибка загрузки данных: {ex.Message}");
             }
         }
 
@@ -81,7 +81,7 @@ namespace MyApp.Views
             }
             else
             {
-                await MessageBox.Show(this, "Выберите сотрудника для просмотра.");
+                await ShowMessageAsync("Выберите сотрудника для просмотра.");
             }
         }
 
@@ -89,28 +89,38 @@ namespace MyApp.Views
         {
             if (EmployeesListBox.SelectedItem is not User selectedUser)
             {
-                await MessageBox.Show(this, "Выберите сотрудника для увольнения.");
+                await ShowMessageAsync("Выберите сотрудника для увольнения.");
                 return;
             }
             
             if (selectedUser.Id == _currentUser.Id)
             {
-                await MessageBox.Show(this, "Вы не можете уволить самого себя.");
+                await ShowMessageAsync("Вы не можете уволить самого себя.");
                 return;
             }
             
             if (selectedUser.Role == "Admin")
             {
-                await MessageBox.Show(this, "Нельзя уволить администратора. Сначала смените ему роль на Waiter или Cook.");
+                await ShowMessageAsync("Нельзя уволить администратора. Сначала смените ему роль на Waiter или Cook.");
                 return;
             }
             
-            bool confirm = await MessageBox.Show(this,
-                $"Уволить сотрудника «{selectedUser.FullName}» ({selectedUser.Role})?",
-                "Подтверждение увольнения",
-                true);
+            // Первое подтверждение
+            bool confirm1 = await ShowConfirmationDialogAsync(
+                $"Вы действительно хотите уволить сотрудника «{selectedUser.FullName}» ({selectedUser.Role})?",
+                "Подтверждение увольнения - Шаг 1/2");
 
-            if (!confirm) return;
+            if (!confirm1) return;
+
+            // Финальное подтверждение с красным предупреждением
+            bool confirm2 = await ShowConfirmationDialogAsync(
+                $"🔴 ВНИМАНИЕ: ЭТО ДЕЙСТВИЕ НЕОБРАТИМО! 🔴\n\n" +
+                $"Вы увольняете: {selectedUser.FullName}\n" +
+                $"Должность: {selectedUser.Role}\n\n" +
+                $"Это действие нельзя отменить. Продолжить?",
+                "ФИНАЛЬНОЕ ПОДТВЕРЖДЕНИЕ УВОЛЬНЕНИЯ");
+
+            if (!confirm2) return;
 
             try
             {
@@ -119,11 +129,11 @@ namespace MyApp.Views
                 db.Users.Update(selectedUser);
                 await db.SaveChangesAsync();
                 await LoadDataAsync();
-                await MessageBox.Show(this, $"Сотрудник {selectedUser.FullName} успешно уволен.");
+                await ShowMessageAsync($"Сотрудник {selectedUser.FullName} успешно уволен.");
             }
             catch (Exception ex)
             {
-                await MessageBox.Show(this, $"Ошибка при увольнении: {ex.Message}");
+                await ShowMessageAsync($"Ошибка при увольнении: {ex.Message}");
             }
         }
 
@@ -131,16 +141,74 @@ namespace MyApp.Views
         {
             try
             {
-                var newShift = new Shift { Date = DateTime.Now.AddDays(1), EmployeeIds = new List<int>() };
+                // Более информативное название смены
+                string shiftName = $"Смена на {DateTime.Now.AddDays(1):dd.MM.yyyy}";
+                
                 using var db = new AppDbContext();
+                
+                // Проверяем, существует ли уже смена на эту дату
+                bool shiftExists = await db.Shifts.AnyAsync(s => s.Name == shiftName);
+                if (shiftExists)
+                {
+                    // Если смена на эту дату уже есть, добавляем номер
+                    int counter = 2;
+                    string newName;
+                    do
+                    {
+                        newName = $"{shiftName} ({counter})";
+                        counter++;
+                    } while (await db.Shifts.AnyAsync(s => s.Name == newName));
+                    
+                    shiftName = newName;
+                }
+
+                var newShift = new Shift 
+                { 
+                    Name = shiftName,
+                    Date = DateTime.Now.AddDays(1), 
+                    EmployeeIds = new List<int>() 
+                };
+                
                 db.Shifts.Add(newShift);
                 await db.SaveChangesAsync();
                 await LoadDataAsync();
-                await MessageBox.Show(this, "Смена создана.");
+                await ShowMessageAsync($"Смена «{shiftName}» успешно создана.");
             }
             catch (Exception ex)
             {
-                await MessageBox.Show(this, $"Ошибка создания смены: {ex.Message}");
+                await ShowMessageAsync($"Ошибка создания смены: {ex.Message}");
+            }
+        }
+
+        private async void DeleteShift_Click(object? sender, RoutedEventArgs e)
+        {
+            if (ShiftsListBox.SelectedItem is not Shift selectedShift)
+            {
+                await ShowMessageAsync("Выберите смену для удаления.");
+                return;
+            }
+
+            // Подтверждение удаления
+            bool confirm = await ShowConfirmationDialogAsync(
+                $"Вы действительно хотите удалить смену «{selectedShift.Name}»?\n\n" +
+                $"Дата: {selectedShift.Date:dd.MM.yyyy}\n" +
+                $"Сотрудников в смене: {selectedShift.EmployeeIds.Count}\n\n" +
+                $"Это действие нельзя отменить.",
+                "Подтверждение удаления смены");
+
+            if (!confirm) return;
+
+            try
+            {
+                using var db = new AppDbContext();
+                db.Shifts.Remove(selectedShift);
+                await db.SaveChangesAsync();
+                await LoadDataAsync();
+                await ShowMessageAsync($"Смена «{selectedShift.Name}» успешно удалена.");
+            }
+            catch (Exception ex)
+            {
+                await ShowMessageAsync($"Ошибка при удалении смены: {ex.Message}");
             }
         }
 
@@ -148,13 +216,13 @@ namespace MyApp.Views
         {
             if (ShiftsListBox.SelectedItem is not Shift selectedShift)
             {
-                await MessageBox.Show(this, "Выберите смену для назначения.");
+                await ShowMessageAsync("Выберите смену для назначения.");
                 return;
             }
 
             if (EmployeesListBox.SelectedItem is not User selectedUser)
             {
-                await MessageBox.Show(this, "Выберите сотрудника для назначения.");
+                await ShowMessageAsync("Выберите сотрудника для назначения.");
                 return;
             }
 
@@ -166,13 +234,13 @@ namespace MyApp.Views
 
                 if (shift.EmployeeIds.Count >= 7)
                 {
-                    await MessageBox.Show(this, "Максимум 7 сотрудников в смене.");
+                    await ShowMessageAsync("Максимум 7 сотрудников в смене.");
                     return;
                 }
 
                 if (shift.EmployeeIds.Count < 4)
                 {
-                    await MessageBox.Show(this, "Внимание: в смене меньше 4 сотрудников. Минимум 4 сотрудника рекомендуется для нормальной работы.");
+                    await ShowMessageAsync("Внимание: в смене меньше 4 сотрудников. Минимум 4 сотрудника рекомендуется для нормальной работы.");
                 }
 
                 if (!shift.EmployeeIds.Contains(selectedUser.Id))
@@ -181,16 +249,57 @@ namespace MyApp.Views
                     db.Shifts.Update(shift);
                     await db.SaveChangesAsync();
                     await LoadDataAsync();
-                    await MessageBox.Show(this, "Сотрудник назначен на смену.");
+                    await ShowMessageAsync($"Сотрудник {selectedUser.FullName} назначен на смену «{shift.Name}».");
                 }
                 else
                 {
-                    await MessageBox.Show(this, "Сотрудник уже назначен на эту смену.");
+                    await ShowMessageAsync("Сотрудник уже назначен на эту смену.");
                 }
             }
             catch (Exception ex)
             {
-                await MessageBox.Show(this, $"Ошибка назначения на смену: {ex.Message}");
+                await ShowMessageAsync($"Ошибка назначения на смену: {ex.Message}");
+            }
+        }
+
+        private async void ViewShiftEmployees_Click(object? sender, RoutedEventArgs e)
+        {
+            if (ShiftsListBox.SelectedItem is not Shift selectedShift)
+            {
+                await ShowMessageAsync("Выберите смену для просмотра сотрудников.");
+                return;
+            }
+
+            try
+            {
+                using var db = new AppDbContext();
+                
+                // Получаем всех сотрудников из базы
+                var allEmployees = await db.Users.Where(u => !u.IsFired).ToListAsync();
+                
+                // Находим сотрудников, которые назначены на эту смену
+                var shiftEmployees = allEmployees
+                    .Where(emp => selectedShift.EmployeeIds.Contains(emp.Id))
+                    .ToList();
+
+                if (shiftEmployees.Count == 0)
+                {
+                    await ShowMessageAsync($"В смене «{selectedShift.Name}» нет назначенных сотрудников.");
+                    return;
+                }
+
+                // Формируем сообщение со списком сотрудников
+                var employeeList = string.Join("\n", shiftEmployees
+                    .Select((emp, index) => $"{index + 1}. {emp.FullName} ({emp.Role})"));
+
+                await ShowMessageAsync(
+                    $"Сотрудники в смене «{selectedShift.Name}»:\n\n" +
+                    $"{employeeList}\n\n" +
+                    $"Всего сотрудников: {shiftEmployees.Count}");
+            }
+            catch (Exception ex)
+            {
+                await ShowMessageAsync($"Ошибка при получении списка сотрудников: {ex.Message}");
             }
         }
 
@@ -198,13 +307,13 @@ namespace MyApp.Views
         {
             if (OrdersListBox.SelectedItem is not Order selectedOrder)
             {
-                await MessageBox.Show(this, "Выберите заказ для редактирования.");
+                await ShowMessageAsync("Выберите заказ для редактирования.");
                 return;
             }
 
             if (selectedOrder.Status == "Paid")
             {
-                await MessageBox.Show(this, "Нельзя редактировать оплаченный заказ.");
+                await ShowMessageAsync("Нельзя редактировать оплаченный заказ.");
                 return;
             }
 
@@ -216,11 +325,11 @@ namespace MyApp.Views
                 db.Orders.Update(selectedOrder);
                 await db.SaveChangesAsync();
                 await LoadDataAsync();
-                await MessageBox.Show(this, "Заказ отредактирован.");
+                await ShowMessageAsync("Заказ отредактирован.");
             }
             catch (Exception ex)
             {
-                await MessageBox.Show(this, $"Ошибка редактирования заказа: {ex.Message}");
+                await ShowMessageAsync($"Ошибка редактирования заказа: {ex.Message}");
             }
         }
 
@@ -271,11 +380,11 @@ namespace MyApp.Views
                 document.Add(table);
                 document.Close();
 
-                await MessageBox.Show(this, "PDF-отчёт по заказам успешно сохранён.");
+                await ShowMessageAsync("PDF-отчёт по заказам успешно сохранён.");
             }
             catch (Exception ex)
             {
-                await MessageBox.Show(this, $"Ошибка создания PDF-отчёта: {ex.Message}");
+                await ShowMessageAsync($"Ошибка создания PDF-отчёта: {ex.Message}");
             }
         }
 
@@ -325,12 +434,26 @@ namespace MyApp.Views
                 await using var stream = await result.OpenWriteAsync();
                 workbook.SaveAs(stream);
 
-                await MessageBox.Show(this, "XLSX-отчёт по выручке успешно сохранён.");
+                await ShowMessageAsync("XLSX-отчёт по выручке успешно сохранён.");
             }
             catch (Exception ex)
             {
-                await MessageBox.Show(this, $"Ошибка создания XLSX-отчёта: {ex.Message}");
+                await ShowMessageAsync($"Ошибка создания XLSX-отчёта: {ex.Message}");
             }
+        }
+
+        // Вспомогательные методы для диалоговых окон
+        private async Task ShowMessageAsync(string message)
+        {
+            await MessageBox.Show(this, message);
+        }
+
+        private async Task<bool> ShowConfirmationDialogAsync(string message, string title)
+        {
+            // Создаем кастомное диалоговое окно для подтверждения
+            var dialog = new ConfirmationDialogWindow(message, title);
+            await dialog.ShowDialog(this);
+            return dialog.Result;
         }
     }
 }

@@ -4,26 +4,33 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="MyApp.Views.AdminWindow"
-        Title="AdminWindow">
+        Title="AdminWindow"
+        Width="800" Height="600">
     <TabControl>
         <TabItem Header="Сотрудники">
             <StackPanel Spacing="10" Margin="10">
                 <Button Content="Добавить сотрудника" Click="AddEmployee_Click" />
-                <ListBox x:Name="EmployeesListBox" />
-                <Button Content="Уволить" Click="FireEmployee_Click" />
-                <Button Content="Просмотр/Редактирование" Click="ViewEmployee_Click" />
+                <ListBox x:Name="EmployeesListBox" Height="300" />
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Button Content="Просмотр/Редактирование" Click="ViewEmployee_Click" />
+                    <Button Content="Уволить" Click="FireEmployee_Click" Background="#FFDC2626" Foreground="White" />
+                </StackPanel>
             </StackPanel>
         </TabItem>
         <TabItem Header="Смены">
             <StackPanel Spacing="10" Margin="10">
                 <Button Content="Создать смену" Click="CreateShift_Click" />
-                <ListBox x:Name="ShiftsListBox" />
-                <Button Content="Назначить в смену" Click="AssignToShift_Click" />
+                <ListBox x:Name="ShiftsListBox" Height="300" />
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Button Content="Назначить в смену" Click="AssignToShift_Click" />
+                    <Button Content="Сотрудники в смене" Click="ViewShiftEmployees_Click" />
+                    <Button Content="Удалить смену" Click="DeleteShift_Click" Background="#FFDC2626" Foreground="White" />
+                </StackPanel>
             </StackPanel>
         </TabItem>
         <TabItem Header="Заказы">
             <StackPanel Spacing="10" Margin="10">
-                <ListBox x:Name="OrdersListBox" />
+                <ListBox x:Name="OrdersListBox" Height="350" />
                 <Button Content="Редактировать заказ" Click="EditOrder_Click" />
             </StackPanel>
         </TabItem>

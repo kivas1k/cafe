@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Controls.Primitives;
 
 namespace MyApp.Views;
 
@@ -19,6 +20,7 @@ public partial class EmployeeCardWindow : Window
     private string? _photoPath;
     private string? _contractPath;
     private bool _isEditMode;
+    private readonly string _filesDirectory;
 
     public EmployeeCardWindow(User? user = null)
     {
@@ -26,8 +28,11 @@ public partial class EmployeeCardWindow : Window
     
         _user = user ?? new User();
         _isEditMode = user != null;
-
-        // Инициализация интерфейса
+        
+        // Определяем путь к папке Files
+        _filesDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Files");
+        Directory.CreateDirectory(_filesDirectory);
+        
         InitializeUI();
     
         // Настройка обработчиков drag & drop
@@ -39,7 +44,6 @@ public partial class EmployeeCardWindow : Window
 
     private void InitializeUI()
     {
-        // Заголовок окна
         WindowTitleText.Text = _isEditMode ? "Редактирование сотрудника" : "Новый сотрудник";
 
         // Заполнение полей данными
@@ -48,27 +52,45 @@ public partial class EmployeeCardWindow : Window
             FullNameTextBox.Text = _user.FullName ?? "";
             UsernameTextBox.Text = _user.Username ?? "";
             PasswordTextBox.Text = _user.Password ?? "";
-            _photoPath = _user.PhotoPath;
-            _contractPath = _user.ContractPath;
+            _photoPath = GetFullFilePath(_user.PhotoPath);
+            _contractPath = GetFullFilePath(_user.ContractPath);
         }
-
-        // Настройка ComboBox с ролями
+        
         RoleComboBox.ItemsSource = new List<string> { "Admin", "Waiter", "Cook" };
         RoleComboBox.SelectedItem = _user.Role ?? "Waiter";
-
-        // Обновление отображения файлов
+        
         UpdateFileDisplays();
+    }
+
+    private string? GetFullFilePath(string? filePath)
+    {
+        if (string.IsNullOrEmpty(filePath))
+            return null;
+        
+        if (Path.IsPathRooted(filePath))
+            return filePath;
+        
+        return Path.Combine(_filesDirectory, Path.GetFileName(filePath));
+    }
+
+    private string? GetRelativeFilePath(string? fullPath)
+    {
+        if (string.IsNullOrEmpty(fullPath))
+            return null;
+        
+        return Path.GetFileName(fullPath);
     }
 
     private void UpdateFileDisplays()
     {
-        // Обновление фото
-        if (_photoPath != null)
+ 
+        if (!string.IsNullOrEmpty(_photoPath) && File.Exists(_photoPath))
         {
             PhotoTextBlock.Text = "Фото\nзагружено";
             PhotoDropBorder.Background = Brushes.LightGreen;
             PhotoDropBorder.BorderBrush = Brushes.Green;
             RemovePhotoButton.IsVisible = true;
+            ViewPhotoButton.IsVisible = true;
         }
         else
         {
@@ -76,15 +98,17 @@ public partial class EmployeeCardWindow : Window
             PhotoDropBorder.Background = Brushes.LightGray;
             PhotoDropBorder.BorderBrush = Brushes.Gray;
             RemovePhotoButton.IsVisible = false;
+            ViewPhotoButton.IsVisible = false;
+            _photoPath = null;
         }
-
-        // Обновление договора
-        if (_contractPath != null)
+        
+        if (!string.IsNullOrEmpty(_contractPath) && File.Exists(_contractPath))
         {
             ContractTextBlock.Text = "Договор\nзагружен";
             ContractDropBorder.Background = Brushes.LightGreen;
             ContractDropBorder.BorderBrush = Brushes.Green;
             RemoveContractButton.IsVisible = true;
+            DownloadContractButton.IsVisible = true;
         }
         else
         {
@@ -92,19 +116,19 @@ public partial class EmployeeCardWindow : Window
             ContractDropBorder.Background = Brushes.LightGray;
             ContractDropBorder.BorderBrush = Brushes.Gray;
             RemoveContractButton.IsVisible = false;
+            DownloadContractButton.IsVisible = false;
+            _contractPath = null;
         }
     }
 
     private void DragOver(object? sender, DragEventArgs e)
     {
-        // Исправлено: использование нового API DataTransfer вместо устаревшего Data
         e.DragEffects = e.Data.GetFiles()?.Any() == true ? DragDropEffects.Copy : DragDropEffects.None;
         e.Handled = true;
     }
 
     private async void PhotoDrop(object? sender, DragEventArgs e)
     {
-        // Исправлено: использование нового API DataTransfer вместо устаревшего Data
         var files = e.Data.GetFiles()?.OfType<IStorageFile>().ToList();
         if (files?.Count > 0)
         {
@@ -114,7 +138,6 @@ public partial class EmployeeCardWindow : Window
 
     private async void ContractDrop(object? sender, DragEventArgs e)
     {
-        // Исправлено: использование нового API DataTransfer вместо устаревшего Data
         var files = e.Data.GetFiles()?.OfType<IStorageFile>().ToList();
         if (files?.Count > 0)
         {
@@ -169,6 +192,91 @@ public partial class EmployeeCardWindow : Window
         _contractPath = null;
         UpdateFileDisplays();
     }
+    
+    private async void ViewPhoto_Click(object? sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(_photoPath) || !File.Exists(_photoPath))
+        {
+            await MessageBox.Show(this, "Фото не найдено!", "Ошибка");
+            return;
+        }
+
+        try
+        {
+            var imageViewer = new Window
+            {
+                Title = $"Фото сотрудника: {_user.FullName}",
+                Width = 600,
+                Height = 600,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            var image = new Image
+            {
+                Source = new Avalonia.Media.Imaging.Bitmap(_photoPath),
+                Stretch = Stretch.Uniform,
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+            };
+
+            var scrollViewer = new ScrollViewer
+            {
+                Content = image,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+            };
+
+            imageViewer.Content = scrollViewer;
+            await imageViewer.ShowDialog(this);
+        }
+        catch (Exception ex)
+        {
+            await MessageBox.Show(this, $"Ошибка при открытии фото: {ex.Message}", "Ошибка");
+        }
+    }
+    
+    private async void DownloadContract_Click(object? sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(_contractPath) || !File.Exists(_contractPath))
+        {
+            await MessageBox.Show(this, "Договор не найдено!", "Ошибка");
+            return;
+        }
+
+        try
+        {
+            var fileExtension = Path.GetExtension(_contractPath);
+            var defaultFileName = $"Договор_{_user.FullName}_{DateTime.Now:yyyyMMdd}{fileExtension}";
+            
+            foreach (var invalidChar in Path.GetInvalidFileNameChars())
+            {
+                defaultFileName = defaultFileName.Replace(invalidChar, '_');
+            }
+
+            var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Сохранить трудовой договор",
+                SuggestedFileName = defaultFileName,
+                FileTypeChoices = new[]
+                {
+                    new FilePickerFileType("Документы") 
+                    { 
+                        Patterns = new[] { "*.pdf", "*.doc", "*.docx" } 
+                    }
+                }
+            });
+
+            if (file != null)
+            {
+                File.Copy(_contractPath, file.Path.LocalPath, overwrite: true);
+                await MessageBox.Show(this, "Договор успешно сохранен!", "Успех");
+            }
+        }
+        catch (Exception ex)
+        {
+            await MessageBox.Show(this, $"Ошибка при сохранении договора: {ex.Message}", "Ошибка");
+        }
+    }
 
     private async Task SaveFile(IStorageFile? file, bool isPhoto)
     {
@@ -176,9 +284,8 @@ public partial class EmployeeCardWindow : Window
         
         try
         {
-            var folder = Path.Combine(Directory.GetCurrentDirectory(), "Files");
-            Directory.CreateDirectory(folder);
-            var dest = Path.Combine(folder, $"{Guid.NewGuid()}_{file.Name}");
+            var uniqueFileName = $"{Guid.NewGuid()}_{file.Name}";
+            var dest = Path.Combine(_filesDirectory, uniqueFileName);
 
             await using var src = await file.OpenReadAsync();
             await using var dst = File.Create(dest);
@@ -239,8 +346,9 @@ public partial class EmployeeCardWindow : Window
             _user.Username = UsernameTextBox.Text?.Trim() ?? "";
             _user.Password = PasswordTextBox.Text ?? "";
             _user.Role = RoleComboBox.SelectedItem as string ?? "Waiter";
-            _user.PhotoPath = _photoPath;
-            _user.ContractPath = _contractPath;
+            
+            _user.PhotoPath = GetRelativeFilePath(_photoPath);
+            _user.ContractPath = GetRelativeFilePath(_contractPath);
 
             using var db = new AppDbContext();
             if (_user.Id == 0)
