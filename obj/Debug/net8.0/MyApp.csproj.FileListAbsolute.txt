@@ -207,7 +207,6 @@ C:\Users\user\RiderProjects\cafe\obj\Debug\net8.0\MyApp.pdb
 C:\Users\user\RiderProjects\cafe\obj\Debug\net8.0\MyApp.genruntimeconfig.cache
 C:\Users\user\RiderProjects\cafe\obj\Debug\net8.0\ref\MyApp.dll
 C:\Users\user\RiderProjects\cafe\bin\Debug\net8.0\Data\cafe.db
-C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\Data\cafe.db
 C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\MyApp.exe
 C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\MyApp.deps.json
 C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\MyApp.runtimeconfig.json
@@ -416,3 +415,4 @@ C:\Users\user\RiderProjects\MyApp\obj\Debug\net8.0\refint\MyApp.dll
 C:\Users\user\RiderProjects\MyApp\obj\Debug\net8.0\MyApp.pdb
 C:\Users\user\RiderProjects\MyApp\obj\Debug\net8.0\MyApp.genruntimeconfig.cache
 C:\Users\user\RiderProjects\MyApp\obj\Debug\net8.0\ref\MyApp.dll
+C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\Data\cafe.db

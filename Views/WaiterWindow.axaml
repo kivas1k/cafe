@@ -1,15 +1,102 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        xmlns:views="clr-namespace:MyApp.Views"
+        xmlns:models="clr-namespace:MyApp.Models"
+        xmlns:conv="clr-namespace:MyApp.Converters"
         x:Class="MyApp.Views.WaiterWindow"
-        Title="WaiterWindow">
-    <StackPanel Spacing="10" Margin="10">
-        <Button Content="Создать заказ" Click="CreateOrder_Click" />
-        <ListBox x:Name="OrdersListBox" />
-        <Button Content="Изменить статус" Click="ChangeStatus_Click" />
-        <Button Content="Оплатить" Click="PayOrder_Click" />
-        <Button Content="Отчёт по смене" Click="GenerateReport_Click" />
+        Title="Официант"
+        Width="950" Height="700">
+
+    <Window.Resources>
+        <!-- Регистрируем твой InverseBoolConverter -->
+        <conv:InverseBoolConverter x:Key="InverseBoolConverter"/>
+    </Window.Resources>
+
+    <StackPanel Margin="20" Spacing="15">
+
+        <TextBlock Text="Работа официанта"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center"/>
+
+        <!-- 🔥 ВОССТАНАВЛИВАЕМ 4 КНОПКИ -->
+        <Grid ColumnDefinitions="*,*,*,*">
+            <Button Content="Создать заказ"
+                    Click="CreateOrder_Click"
+                    Margin="5"/>
+
+            <Button Content="Изменить статус"
+                    Grid.Column="1"
+                    Click="ChangeStatus_Click"
+                    Margin="5"/>
+
+            <Button Content="Оплатить заказ"
+                    Grid.Column="2"
+                    Click="PayOrder_Click"
+                    Margin="5"/>
+
+            <Button Content="Отчёт по смене"
+                    Grid.Column="3"
+                    Click="GenerateReport_Click"
+                    Margin="5"/>
+        </Grid>
+
+        <!-- СПИСОК ЗАКАЗОВ -->
+        <ListBox x:Name="OrdersListBox"
+                 Height="480"
+                 Margin="0,10,0,0">
+
+            <ListBox.ItemTemplate>
+                <DataTemplate DataType="{x:Type models:Order}">
+                    <Border Background="#FAFAFA"
+                            CornerRadius="8"
+                            Padding="14"
+                            Margin="4"
+                            BorderBrush="#E0E0E0"
+                            BorderThickness="1">
+
+                        <Grid ColumnDefinitions="80,110,*,140,110">
+
+                            <TextBlock Grid.Column="0"
+                                       Text="{Binding Id, StringFormat=№{0}}"
+                                       FontWeight="Bold"
+                                       Foreground="#1976D2"/>
+
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding TableNumber, StringFormat=Стол {0}}"
+                                       Foreground="#555"/>
+
+                            <TextBlock Grid.Column="2"
+                                       Text="{Binding Items}"
+                                       TextTrimming="CharacterEllipsis"/>
+
+                            <TextBlock Grid.Column="3"
+                                       Text="{Binding TotalAmount, StringFormat={}{0:C}}"
+                                       FontWeight="SemiBold"
+                                       Foreground="#2E7D32"/>
+
+                            <TextBlock Grid.Column="4"
+                                       Text="{Binding Status}"
+                                       FontWeight="Bold"
+                                       Foreground="{Binding Status,
+                                            Converter={x:Static views:StatusToBrushConverter.Instance}}"/>
+
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+
+        </ListBox>
+
+        <!-- НАДПИСЬ КОГДА НЕТ ЗАКАЗОВ -->
+        <TextBlock Text="Заказов пока нет. Нажмите «Создать заказ»"
+                   FontSize="20"
+                   Foreground="#999999"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   IsVisible="{Binding Items.Count,
+                                   ElementName=OrdersListBox,
+                                   Converter={StaticResource InverseBoolConverter}}"/>
+
     </StackPanel>
 </Window>
