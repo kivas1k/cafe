@@ -1,12 +1,11 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="clr-namespace:MyApp.Views"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        xmlns:models="clr-namespace:MyApp.Models"
         x:Class="MyApp.Views.AdminWindow"
-        Title="AdminWindow"
-        Width="800" Height="600">
+        Title="Администратор"
+        Width="900" Height="650">
+
     <TabControl>
         <TabItem Header="Сотрудники">
             <StackPanel Spacing="10" Margin="10">
@@ -14,10 +13,11 @@
                 <ListBox x:Name="EmployeesListBox" Height="300" />
                 <StackPanel Orientation="Horizontal" Spacing="10">
                     <Button Content="Просмотр/Редактирование" Click="ViewEmployee_Click" />
-                    <Button Content="Уволить" Click="FireEmployee_Click" Background="#FFDC2626" Foreground="White" />
+                    <Button Content="Уволить" Click="FireEmployee_Click" Background="#FF3B30" Foreground="White" />
                 </StackPanel>
             </StackPanel>
         </TabItem>
+
         <TabItem Header="Смены">
             <StackPanel Spacing="10" Margin="10">
                 <Button Content="Создать смены на 5 дней" Click="CreateShiftsForWeek_Click" />
@@ -38,17 +38,35 @@
                 <StackPanel Orientation="Horizontal" Spacing="10">
                     <Button Content="Назначить в смену" Click="AssignToShift_Click" />
                     <Button Content="Сотрудники в смене" Click="ViewShiftEmployees_Click" />
-                    <Button Content="Удалить из смены" Click="RemoveFromShift_Click" Background="#FFDC2626" Foreground="White" />
-                    <Button Content="Удалить смену" Click="DeleteShift_Click" Background="#FFDC2626" Foreground="White" />
+                    <Button Content="Удалить из смены" Click="RemoveFromShift_Click" Background="#FF3B30" Foreground="White" />
+                    <Button Content="Удалить смену" Click="DeleteShift_Click" Background="#FF3B30" Foreground="White" />
                 </StackPanel>
             </StackPanel>
         </TabItem>
+
+        <!-- ВОТ ГЛАВНОЕ ИСПРАВЛЕНИЕ: добавил xmlns:models и DataType="models:Order" -->
         <TabItem Header="Заказы">
             <StackPanel Spacing="10" Margin="10">
-                <ListBox x:Name="OrdersListBox" Height="350" />
+                <ListBox x:Name="OrdersListBox" Height="380">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="models:Order">
+                            <Border Background="#FAFAFA" Padding="12,10" Margin="2" CornerRadius="6">
+                                <TextBlock FontSize="15" FontWeight="Medium">
+                                    <Run Text="Стол "/>
+                                    <Run Text="{Binding TableNumber}" FontWeight="Bold"/>
+                                    <Run Text=" • "/>
+                                    <Run Text="{Binding TotalAmount, StringFormat={}{0:C}}" Foreground="#2E7D32" FontWeight="Bold"/>
+                                    <Run Text=" • "/>
+                                    <Run Text="{Binding CreatedAt, StringFormat='{}{0:dd.MM.yyyy HH:mm}'}" Foreground="#666"/>
+                                </TextBlock>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
                 <Button Content="Редактировать заказ" Click="EditOrder_Click" />
             </StackPanel>
         </TabItem>
+
         <TabItem Header="Отчёты">
             <StackPanel Spacing="10" Margin="10">
                 <Button Content="Отчёт по заказам (PDF)" Click="GenerateOrdersReportPdf_Click" />
