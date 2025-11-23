@@ -1,68 +1,60 @@
+using System;
 using Avalonia.Collections;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
+using Microsoft.EntityFrameworkCore;
 using MyApp.Models;
 using MyApp.Services;
-using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace MyApp.Views
+namespace MyApp.Views;
+
+public partial class CookWindow : Window
 {
-    public partial class CookWindow : Window
+    private readonly User _currentUser;
+    private readonly AvaloniaList<Order> _orders = new();
+
+    public CookWindow(User user)
     {
-        private readonly User _currentUser;
-        private readonly AvaloniaList<Order> _orders = new();
+        InitializeComponent();
+        _currentUser = user;
+        OrdersListBox.ItemsSource = _orders;
 
-        public CookWindow(User user)
+        // Загружаем при открытии окна
+        this.Opened += async (_, __) => await LoadDataAsync();
+
+        // Правильный способ: авто-обновление каждые 5 секунд
+        DispatcherTimer.Run(() =>
         {
-            InitializeComponent();
-            _currentUser = user;
-            OrdersListBox.ItemsSource = _orders;
-            this.Opened += async (s, e) => await LoadDataAsync();
-        }
+            _ = LoadDataAsync(); // fire-and-forget — безопасно
+            return true;
+        }, TimeSpan.FromSeconds(5));
+    }
 
-        private async Task LoadDataAsync()
+    private async Task LoadDataAsync()
+    {
+        using var db = new AppDbContext();
+        var list = await db.Orders
+            .Where(o => o.Status == "Accepted" || o.Status == "Cooking" || o.Status == "Ready")
+            .OrderBy(o => o.CreatedAt)
+            .ToListAsync();
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            await Task.Run(() =>
-            {
-                using var db = new AppDbContext();
-                var orders = db.Orders
-                    .Where(o => o.Status == "Accepted" || o.Status == "Cooking")
-                    .ToList();
+            _orders.Clear();
+            _orders.AddRange(list);
+        });
+    }
 
-                // Возвращаемся в UI-поток и обновляем список
-                Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    OrdersListBox.ItemsSource = orders;
-                });
-            });
-        }
+    private async void OrdersListBox_DoubleTapped(object? sender, RoutedEventArgs e)
+    {
+        if (OrdersListBox.SelectedItem is not Order order)
+            return;
 
-        private async void SetCooking_Click(object? sender, RoutedEventArgs e)
-        {
-            if (OrdersListBox.SelectedItem is Order selectedOrder)
-            {
-                selectedOrder.Status = "Cooking";
-                using var db = new AppDbContext();
-                db.Orders.Update(selectedOrder);
-                await db.SaveChangesAsync();
-                await LoadDataAsync();
-                await MessageBox.Show(this, "Статус: Готовится.");
-            }
-        }
-
-        private async void SetReady_Click(object? sender, RoutedEventArgs e)
-        {
-            if (OrdersListBox.SelectedItem is Order selectedOrder)
-            {
-                selectedOrder.Status = "Ready";
-                using var db = new AppDbContext();
-                db.Orders.Update(selectedOrder);
-                await db.SaveChangesAsync();
-                await LoadDataAsync();
-                await MessageBox.Show(this, "Статус: Готово.");
-            }
-        }
+        var card = new OrderCardWindow(order);
+        card.Closed += async (_, __) => await LoadDataAsync();
+        await card.ShowDialog(this);
     }
 }

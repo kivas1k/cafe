@@ -1,0 +1,103 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:MyApp.Models"
+        x:Class="MyApp.Views.OrderCardWindow"
+        x:DataType="models:Order"
+        Title="Карточка заказа"
+        Width="480"
+        Height="560"
+        WindowStartupLocation="CenterOwner"
+        Background="#F5F5F5">
+
+    <StackPanel Margin="24" Spacing="16">
+        <TextBlock Text="Карточка заказа"
+                   FontSize="26"
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   Foreground="#333"/>
+
+        <Border Background="White"
+                CornerRadius="16"
+                Padding="24"
+                BorderBrush="#E0E0E0"
+                BorderThickness="1"
+                BoxShadow="0 4 20 0 #20000000">
+
+            <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto">
+                <!-- Заголовок -->
+                <TextBlock Grid.Row="0"
+                           Text="{Binding Id, StringFormat=Заказ №{0}}"
+                           FontSize="26"
+                           FontWeight="Bold"
+                           Foreground="#1565C0"/>
+
+                <!-- Стол и гости -->
+                <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,12,0,0">
+                    <TextBlock Text="{Binding TableNumber, StringFormat=Стол: {0}}" FontSize="17" FontWeight="SemiBold"/>
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding CustomersCount, StringFormat=Гостей: {0}}"
+                               FontSize="17"
+                               HorizontalAlignment="Right"/>
+                </Grid>
+
+                <!-- Дата и время — ТОЧНО КАК У ОФИЦИАНТА -->
+                <TextBlock Grid.Row="2"
+                           Text="{Binding CreatedAt, StringFormat='{}{0:HH:mm • dd.MM.yyyy}'}"
+                           FontSize="15"
+                           Foreground="#666"
+                           Margin="0,8,0,16"/>
+
+                <Separator Grid.Row="3" Background="#EEEEEE" Height="1"/>
+
+                <!-- Состав -->
+                <StackPanel Grid.Row="4" Spacing="8" Margin="0,16,0,0">
+                    <TextBlock Text="Состав заказа:" FontWeight="SemiBold" Foreground="#555"/>
+                    <TextBlock Text="{Binding Items}"
+                               TextWrapping="Wrap"
+                               FontSize="16"
+                               LineHeight="24"/>
+                </StackPanel>
+
+                <Separator Grid.Row="5" Background="#EEEEEE" Height="1" Margin="0,16"/>
+
+                <!-- Сумма и статус -->
+                <Grid Grid.Row="6" ColumnDefinitions="*,*" Margin="0,16,0,0">
+                    <TextBlock Text="{Binding TotalAmount, StringFormat=К оплате: {0:C}}"
+                               FontSize="24"
+                               FontWeight="Bold"
+                               Foreground="#2E7D32"/>
+
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding Status}"
+                               FontSize="20"
+                               FontWeight="Bold"
+                               Foreground="#D32F2F"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- Кнопки -->
+        <Grid ColumnDefinitions="*,*" Margin="0,10,0,0">
+            <Button Content="Готовится"
+                    Click="SetCooking_Click"
+                    Background="#1976D2"
+                    Foreground="White"
+                    FontSize="16"
+                    Height="52"
+                    CornerRadius="12"
+                    Margin="0,0,8,0"/>
+
+            <Button Grid.Column="1"
+                    Content="Готово"
+                    Click="SetReady_Click"
+                    Background="#2E7D32"
+                    Foreground="White"
+                    FontSize="16"
+                    Height="52"
+                    CornerRadius="12"
+                    Margin="8,0,0,0"/>
+        </Grid>
+    </StackPanel>
+</Window>

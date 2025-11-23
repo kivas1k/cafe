@@ -12,9 +12,7 @@ namespace MyApp.Views
         public ConfirmationDialogWindow()
         {
             InitializeComponent();
-#if DEBUG
             this.AttachDevTools();
-#endif
         }
 
         public ConfirmationDialogWindow(string message, string title) : this()
