@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="clr-namespace:MyApp.Views"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="MyApp.Views.AdminWindow"
         Title="AdminWindow"
@@ -19,11 +20,25 @@
         </TabItem>
         <TabItem Header="Смены">
             <StackPanel Spacing="10" Margin="10">
-                <Button Content="Создать смену" Click="CreateShift_Click" />
-                <ListBox x:Name="ShiftsListBox" Height="300" />
+                <Button Content="Создать смены на 5 дней" Click="CreateShiftsForWeek_Click" />
+                <ListBox x:Name="ShiftsListBox" Height="300">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="views:ShiftDisplayItem">
+                            <Border BorderBrush="LightGray" BorderThickness="1" CornerRadius="5" Padding="10" Margin="2">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" />
+                                    <TextBlock Text="{Binding Date, StringFormat='Дата: {0:dd.MM.yyyy}'}" />
+                                    <TextBlock Text="{Binding EmployeeCount, StringFormat='Сотрудников: {0}/7'}" />
+                                    <TextBlock Text="{Binding Status}" Foreground="{Binding StatusColor}" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
                 <StackPanel Orientation="Horizontal" Spacing="10">
                     <Button Content="Назначить в смену" Click="AssignToShift_Click" />
                     <Button Content="Сотрудники в смене" Click="ViewShiftEmployees_Click" />
+                    <Button Content="Удалить из смены" Click="RemoveFromShift_Click" Background="#FFDC2626" Foreground="White" />
                     <Button Content="Удалить смену" Click="DeleteShift_Click" Background="#FFDC2626" Foreground="White" />
                 </StackPanel>
             </StackPanel>

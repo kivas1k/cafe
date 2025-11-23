@@ -10,7 +10,6 @@ using iText.Layout;
 using iText.Layout.Element;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -21,7 +20,7 @@ namespace MyApp.Views
     {
         private readonly User _currentUser;
         private readonly AvaloniaList<User> _employees = new();
-        private readonly AvaloniaList<Shift> _shifts = new();
+        private readonly AvaloniaList<ShiftDisplayItem> _shiftDisplayItems = new();
         private readonly AvaloniaList<Order> _orders = new();
 
         public AdminWindow(User user)
@@ -30,7 +29,7 @@ namespace MyApp.Views
             _currentUser = user;
 
             EmployeesListBox.ItemsSource = _employees;
-            ShiftsListBox.ItemsSource = _shifts;
+            ShiftsListBox.ItemsSource = _shiftDisplayItems;
             OrdersListBox.ItemsSource = _orders;
 
             this.Loaded += async (s, e) => await LoadDataAsync();
@@ -53,8 +52,8 @@ namespace MyApp.Views
                         _employees.AddRange(users);
                         _orders.Clear();
                         _orders.AddRange(orders);
-                        _shifts.Clear();
-                        _shifts.AddRange(shifts);
+                        _shiftDisplayItems.Clear();
+                        _shiftDisplayItems.AddRange(shifts.Select(s => new ShiftDisplayItem(s)));
                     });
                 });
             }
@@ -105,14 +104,12 @@ namespace MyApp.Views
                 return;
             }
             
-            // Первое подтверждение
             bool confirm1 = await ShowConfirmationDialogAsync(
                 $"Вы действительно хотите уволить сотрудника «{selectedUser.FullName}» ({selectedUser.Role})?",
                 "Подтверждение увольнения - Шаг 1/2");
 
             if (!confirm1) return;
 
-            // Финальное подтверждение с красным предупреждением
             bool confirm2 = await ShowConfirmationDialogAsync(
                 $"🔴 ВНИМАНИЕ: ЭТО ДЕЙСТВИЕ НЕОБРАТИМО! 🔴\n\n" +
                 $"Вы увольняете: {selectedUser.FullName}\n" +
@@ -137,58 +134,60 @@ namespace MyApp.Views
             }
         }
 
-        private async void CreateShift_Click(object? sender, RoutedEventArgs e)
+        private async void CreateShiftsForWeek_Click(object? sender, RoutedEventArgs e)
         {
             try
             {
-                // Более информативное название смены
-                string shiftName = $"Смена на {DateTime.Now.AddDays(1):dd.MM.yyyy}";
-                
                 using var db = new AppDbContext();
-                
-                // Проверяем, существует ли уже смена на эту дату
-                bool shiftExists = await db.Shifts.AnyAsync(s => s.Name == shiftName);
-                if (shiftExists)
+                var createdShifts = new List<string>();
+
+                for (int i = 1; i <= 5; i++)
                 {
-                    // Если смена на эту дату уже есть, добавляем номер
-                    int counter = 2;
-                    string newName;
-                    do
-                    {
-                        newName = $"{shiftName} ({counter})";
-                        counter++;
-                    } while (await db.Shifts.AnyAsync(s => s.Name == newName));
+                    var shiftDate = DateTime.Now.AddDays(i);
+                    string shiftName = $"Смена на {shiftDate:dd.MM.yyyy}";
                     
-                    shiftName = newName;
+                    bool shiftExists = await db.Shifts.AnyAsync(s => s.Name == shiftName);
+                    if (!shiftExists)
+                    {
+                        var newShift = new Shift 
+                        { 
+                            Name = shiftName,
+                            Date = shiftDate, 
+                            EmployeeIds = new List<int>() 
+                        };
+                        
+                        db.Shifts.Add(newShift);
+                        createdShifts.Add(shiftName);
+                    }
                 }
 
-                var newShift = new Shift 
-                { 
-                    Name = shiftName,
-                    Date = DateTime.Now.AddDays(1), 
-                    EmployeeIds = new List<int>() 
-                };
-                
-                db.Shifts.Add(newShift);
-                await db.SaveChangesAsync();
-                await LoadDataAsync();
-                await ShowMessageAsync($"Смена «{shiftName}» успешно создана.");
+                if (createdShifts.Count > 0)
+                {
+                    await db.SaveChangesAsync();
+                    await LoadDataAsync();
+                    await ShowMessageAsync($"Успешно создано {createdShifts.Count} смен:\n" + string.Join("\n", createdShifts));
+                }
+                else
+                {
+                    await ShowMessageAsync("Все смены на ближайшие 5 дней уже созданы.");
+                }
             }
             catch (Exception ex)
             {
-                await ShowMessageAsync($"Ошибка создания смены: {ex.Message}");
+                await ShowMessageAsync($"Ошибка создания смен: {ex.Message}");
             }
         }
 
         private async void DeleteShift_Click(object? sender, RoutedEventArgs e)
         {
-            if (ShiftsListBox.SelectedItem is not Shift selectedShift)
+            if (ShiftsListBox.SelectedItem is not ShiftDisplayItem selectedShiftItem)
             {
                 await ShowMessageAsync("Выберите смену для удаления.");
                 return;
             }
 
-            // Подтверждение удаления
+            var selectedShift = selectedShiftItem.Shift;
+
             bool confirm = await ShowConfirmationDialogAsync(
                 $"Вы действительно хотите удалить смену «{selectedShift.Name}»?\n\n" +
                 $"Дата: {selectedShift.Date:dd.MM.yyyy}\n" +
@@ -214,7 +213,7 @@ namespace MyApp.Views
 
         private async void AssignToShift_Click(object? sender, RoutedEventArgs e)
         {
-            if (ShiftsListBox.SelectedItem is not Shift selectedShift)
+            if (ShiftsListBox.SelectedItem is not ShiftDisplayItem selectedShiftItem)
             {
                 await ShowMessageAsync("Выберите смену для назначения.");
                 return;
@@ -229,32 +228,33 @@ namespace MyApp.Views
             try
             {
                 using var db = new AppDbContext();
-                var shift = await db.Shifts.FirstOrDefaultAsync(s => s.Id == selectedShift.Id);
+                var shift = await db.Shifts.FirstOrDefaultAsync(s => s.Id == selectedShiftItem.Id);
                 if (shift == null) return;
+                
+                if (shift.EmployeeIds.Contains(selectedUser.Id))
+                {
+                    await ShowMessageAsync("Сотрудник уже назначен на эту смену.");
+                    return;
+                }
 
                 if (shift.EmployeeIds.Count >= 7)
                 {
                     await ShowMessageAsync("Максимум 7 сотрудников в смене.");
                     return;
                 }
-
+                
+                shift.EmployeeIds.Add(selectedUser.Id);
+                db.Shifts.Update(shift);
+                await db.SaveChangesAsync();
+                await LoadDataAsync();
+        
+                string message = $"Сотрудник {selectedUser.FullName} назначен на смену «{shift.Name}».";
                 if (shift.EmployeeIds.Count < 4)
                 {
-                    await ShowMessageAsync("Внимание: в смене меньше 4 сотрудников. Минимум 4 сотрудника рекомендуется для нормальной работы.");
+                    message += $"\n\n⚠️ Внимание: в смене всего {shift.EmployeeIds.Count} сотрудников. Минимум 4 сотрудника рекомендуется для нормальной работы.";
                 }
-
-                if (!shift.EmployeeIds.Contains(selectedUser.Id))
-                {
-                    shift.EmployeeIds.Add(selectedUser.Id);
-                    db.Shifts.Update(shift);
-                    await db.SaveChangesAsync();
-                    await LoadDataAsync();
-                    await ShowMessageAsync($"Сотрудник {selectedUser.FullName} назначен на смену «{shift.Name}».");
-                }
-                else
-                {
-                    await ShowMessageAsync("Сотрудник уже назначен на эту смену.");
-                }
+        
+                await ShowMessageAsync(message);
             }
             catch (Exception ex)
             {
@@ -262,22 +262,68 @@ namespace MyApp.Views
             }
         }
 
-        private async void ViewShiftEmployees_Click(object? sender, RoutedEventArgs e)
+        private async void RemoveFromShift_Click(object? sender, RoutedEventArgs e)
         {
-            if (ShiftsListBox.SelectedItem is not Shift selectedShift)
+            if (ShiftsListBox.SelectedItem is not ShiftDisplayItem selectedShiftItem)
             {
-                await ShowMessageAsync("Выберите смену для просмотра сотрудников.");
+                await ShowMessageAsync("Выберите смену для удаления сотрудника.");
+                return;
+            }
+
+            if (EmployeesListBox.SelectedItem is not User selectedUser)
+            {
+                await ShowMessageAsync("Выберите сотрудника для удаления из смены.");
                 return;
             }
 
             try
             {
                 using var db = new AppDbContext();
+                var shift = await db.Shifts.FirstOrDefaultAsync(s => s.Id == selectedShiftItem.Id);
+                if (shift == null) return;
                 
-                // Получаем всех сотрудников из базы
+                if (!shift.EmployeeIds.Contains(selectedUser.Id))
+                {
+                    await ShowMessageAsync($"Сотрудник {selectedUser.FullName} не назначен на смену «{shift.Name}».");
+                    return;
+                }
+                
+                bool confirm = await ShowConfirmationDialogAsync(
+                    $"Вы действительно хотите удалить сотрудника {selectedUser.FullName} из смены «{shift.Name}»?\n\n" +
+                    $"Дата смены: {shift.Date:dd.MM.yyyy}\n" +
+                    $"После удаления в смене останется {shift.EmployeeIds.Count - 1} сотрудников.",
+                    "Подтверждение удаления из смены");
+
+                if (!confirm) return;
+                
+                shift.EmployeeIds.Remove(selectedUser.Id);
+                db.Shifts.Update(shift);
+                await db.SaveChangesAsync();
+                await LoadDataAsync();
+                
+                await ShowMessageAsync($"Сотрудник {selectedUser.FullName} успешно удалён из смены «{shift.Name}».");
+            }
+            catch (Exception ex)
+            {
+                await ShowMessageAsync($"Ошибка при удалении сотрудника из смены: {ex.Message}");
+            }
+        }
+
+        private async void ViewShiftEmployees_Click(object? sender, RoutedEventArgs e)
+        {
+            if (ShiftsListBox.SelectedItem is not ShiftDisplayItem selectedShiftItem)
+            {
+                await ShowMessageAsync("Выберите смену для просмотра сотрудников.");
+                return;
+            }
+
+            var selectedShift = selectedShiftItem.Shift;
+
+            try
+            {
+                using var db = new AppDbContext();
+                
                 var allEmployees = await db.Users.Where(u => !u.IsFired).ToListAsync();
-                
-                // Находим сотрудников, которые назначены на эту смену
                 var shiftEmployees = allEmployees
                     .Where(emp => selectedShift.EmployeeIds.Contains(emp.Id))
                     .ToList();
@@ -288,14 +334,14 @@ namespace MyApp.Views
                     return;
                 }
 
-                // Формируем сообщение со списком сотрудников
                 var employeeList = string.Join("\n", shiftEmployees
                     .Select((emp, index) => $"{index + 1}. {emp.FullName} ({emp.Role})"));
 
                 await ShowMessageAsync(
                     $"Сотрудники в смене «{selectedShift.Name}»:\n\n" +
                     $"{employeeList}\n\n" +
-                    $"Всего сотрудников: {shiftEmployees.Count}");
+                    $"Всего сотрудников: {shiftEmployees.Count}/7\n" +
+                    $"{(shiftEmployees.Count < 4 ? "⚠️ Не хватает сотрудников! Минимум 4." : "✅ Штат укомплектован")}");
             }
             catch (Exception ex)
             {
@@ -319,7 +365,6 @@ namespace MyApp.Views
 
             try
             {
-                // Простое редактирование, например, изменить статус
                 selectedOrder.Status = "Edited";
                 using var db = new AppDbContext();
                 db.Orders.Update(selectedOrder);
@@ -442,7 +487,6 @@ namespace MyApp.Views
             }
         }
 
-        // Вспомогательные методы для диалоговых окон
         private async Task ShowMessageAsync(string message)
         {
             await MessageBox.Show(this, message);
@@ -450,7 +494,6 @@ namespace MyApp.Views
 
         private async Task<bool> ShowConfirmationDialogAsync(string message, string title)
         {
-            // Создаем кастомное диалоговое окно для подтверждения
             var dialog = new ConfirmationDialogWindow(message, title);
             await dialog.ShowDialog(this);
             return dialog.Result;

@@ -12,7 +12,7 @@ namespace MyApp.Models
         
         public override string ToString()
         {
-            return Name;
+            return $"{Name} - {EmployeeIds.Count}/7 сотрудников";
         }
     }
 }
