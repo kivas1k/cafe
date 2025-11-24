@@ -278,7 +278,6 @@ C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\Microsoft.Extensions.Logging.
 C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\Microsoft.Extensions.Options.dll
 C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\Microsoft.Extensions.Primitives.dll
 C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\Mono.TextTemplating.dll
-C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\Newtonsoft.Json.dll
 C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\ReactiveUI.dll
 C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\ReactiveUI.Avalonia.dll
 C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\SixLabors.Fonts.dll
@@ -414,5 +413,11 @@ C:\Users\user\RiderProjects\MyApp\obj\Debug\net8.0\refint\MyApp.dll
 C:\Users\user\RiderProjects\MyApp\obj\Debug\net8.0\MyApp.pdb
 C:\Users\user\RiderProjects\MyApp\obj\Debug\net8.0\MyApp.genruntimeconfig.cache
 C:\Users\user\RiderProjects\MyApp\obj\Debug\net8.0\ref\MyApp.dll
-C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\Data\cafe.db
 C:\Users\user\RiderProjects\cafe\bin\Debug\net8.0\Data\cafe.db
+C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\BouncyCastle.Cryptography.dll
+C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\itext.bouncy-castle-adapter.dll
+C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\System.Text.Encodings.Web.dll
+C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\System.Text.Json.dll
+C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\runtimes\browser\lib\net8.0\System.Text.Encodings.Web.dll
+C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\QuestPDF.dll
+C:\Users\user\RiderProjects\MyApp\bin\Debug\net8.0\SkiaSharp.HarfBuzz.dll

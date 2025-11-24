@@ -1,18 +1,25 @@
-﻿using Avalonia;
+﻿using System;
+using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using System;
-using MyApp.Models;
+using QuestPDF.Infrastructure;   
 
 namespace MyApp;
 
-sealed class Program
+class Program
 {
     [STAThread]
-    public static void Main(string[] args) => BuildAvaloniaApp()
-        .StartWithClassicDesktopLifetime(args);
+    public static void Main(string[] args)
+    {
+        // ПРАВИЛЬНО ДЛЯ ВЕРСИИ 2023.12.6
+        QuestPDF.Settings.License = LicenseType.Community;
+
+        BuildAvaloniaApp()
+            .StartWithClassicDesktopLifetime(args);
+    }
 
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
+            .WithInterFont()
             .LogToTrace();
 }

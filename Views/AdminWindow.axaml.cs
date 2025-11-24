@@ -13,6 +13,14 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.IO;
+using QuestPDF.Fluent;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 
 namespace MyApp.Views
 {
@@ -385,115 +393,203 @@ namespace MyApp.Views
                 await ShowMessageAsync("Заказ успешно изменён!");
             }
         }
+        
+private async void GenerateOrdersReportPdf_Click(object? sender, RoutedEventArgs e)
+{
+    try
+    {
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel == null) return;
 
-        private async void GenerateOrdersReportPdf_Click(object? sender, RoutedEventArgs e)
+        // Используем правильные настройки для сохранения файла
+        var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            try
+            Title = "Сохранить отчёт по заказам",
+            SuggestedFileName = $"Orders_Report_{DateTime.Now:dd-MM-yyyy_HH-mm}.pdf",
+            FileTypeChoices = new[]
             {
-                var filePicker = new FilePickerSaveOptions 
-                { 
-                    Title = "Сохранить PDF отчёт",
-                    SuggestedFileName = $"orders_report_{DateTime.Now:yyyyMMdd_HHmmss}.pdf"
-                };
-                
-                var result = await StorageProvider.SaveFilePickerAsync(filePicker);
-                if (result == null) return;
-
-                using var db = new AppDbContext();
-                var orders = await db.Orders.ToListAsync();
-
-                await using var stream = await result.OpenWriteAsync();
-                using var writer = new PdfWriter(stream);
-                using var pdf = new PdfDocument(writer);
-                var document = new Document(pdf);
-                
-                document.Add(new Paragraph("ОТЧЁТ ПО ВСЕМ ЗАКАЗАМ")
-                    .SetTextAlignment(iText.Layout.Properties.TextAlignment.CENTER)
-                    .SetBold()
-                    .SetFontSize(16));
-
-                document.Add(new Paragraph($"Дата формирования: {DateTime.Now:dd.MM.yyyy HH:mm}"));
-                document.Add(new Paragraph($"Всего заказов: {orders.Count}"));
-                document.Add(new Paragraph(" "));
-                
-                Table table = new Table(4, true);
-                table.AddHeaderCell("ID заказа");
-                table.AddHeaderCell("Номер стола");
-                table.AddHeaderCell("Блюда");
-                table.AddHeaderCell("Статус");
-
-                foreach (var order in orders)
+                new FilePickerFileType("PDF Document")
                 {
-                    table.AddCell(order.Id.ToString());
-                    table.AddCell(order.TableNumber.ToString());
-                    table.AddCell(order.Items ?? "Нет данных");
-                    table.AddCell(order.Status ?? "Не указан");
+                    Patterns = new[] { "*.pdf" },
+                    AppleUniformTypeIdentifiers = new[] { "com.adobe.pdf" },
+                    MimeTypes = new[] { "application/pdf" }
                 }
-
-                document.Add(table);
-                document.Close();
-
-                await ShowMessageAsync("PDF-отчёт по заказам успешно сохранён.");
             }
-            catch (Exception ex)
+        });
+
+        if (file == null) return;
+
+        using var db = new AppDbContext();
+        var orders = await db.Orders.OrderBy(o => o.CreatedAt).ToListAsync();
+
+        // Генерируем PDF
+        QuestPDF.Fluent.Document.Create(container =>
+        {
+            container.Page(page =>
             {
-                await ShowMessageAsync($"Ошибка создания PDF-отчёта: {ex.Message}");
-            }
-        }
+                page.Size(PageSizes.A4);
+                page.Margin(2, Unit.Centimetre);
 
+                // Указываем шрифт с поддержкой русского языка
+                page.DefaultTextStyle(x => x.FontFamily("Arial").FontSize(12));
+
+                // Заголовок
+                page.Header()
+                    .AlignCenter()
+                    .Text("ОТЧЁТ ПО ЗАКАЗАМ")
+                    .FontSize(20)
+                    .SemiBold();
+
+                // Основное содержимое
+                page.Content()
+                    .PaddingVertical(20)
+                    .Column(col =>
+                    {
+                        col.Item().Text($"Сформирован: {DateTime.Now:dd.MM.yyyy HH:mm}");
+                        col.Item().Text($"Всего заказов: {orders.Count}").FontSize(14);
+                        col.Item().PaddingTop(15);
+
+                        if (orders.Any())
+                        {
+                            col.Item().Table(table =>
+                            {
+                                table.ColumnsDefinition(columns =>
+                                {
+                                    columns.ConstantColumn(40);   // №
+                                    columns.ConstantColumn(60);   // Стол
+                                    columns.ConstantColumn(70);   // Гостей
+                                    columns.ConstantColumn(90);   // Сумма
+                                    columns.RelativeColumn();     // Время
+                                    columns.ConstantColumn(80);   // Статус
+                                });
+
+                                // Заголовки таблицы
+                                table.Header(header =>
+                                {
+                                    header.Cell().Text("№").Bold();
+                                    header.Cell().Text("Стол").Bold();
+                                    header.Cell().Text("Гостей").Bold();
+                                    header.Cell().Text("Сумма").Bold();
+                                    header.Cell().Text("Время").Bold();
+                                    header.Cell().Text("Статус").Bold();
+                                });
+
+                                // Данные
+                                int i = 1;
+                                foreach (var order in orders)
+                                {
+                                    table.Cell().Text(i++.ToString());
+                                    table.Cell().Text(order.TableNumber.ToString());
+                                    table.Cell().Text(order.CustomersCount.ToString());
+                                    table.Cell().Text($"{order.TotalAmount:F2} ₽");
+                                    table.Cell().Text(order.CreatedAt.ToString("dd.MM HH:mm"));
+                                    table.Cell().Text(order.Status);
+                                }
+                            });
+
+                            // Итоговая сумма
+                            var totalAmount = orders.Sum(o => o.TotalAmount);
+                            var paidAmount = orders.Where(o => o.Status == "Paid").Sum(o => o.TotalAmount);
+                            
+                            col.Item().PaddingTop(15);
+                            col.Item().Text($"Общая сумма всех заказов: {totalAmount:F2} ₽").SemiBold();
+                            col.Item().Text($"Сумма оплаченных заказов: {paidAmount:F2} ₽").SemiBold();
+                        }
+                        else
+                        {
+                            col.Item().Text("Нет данных о заказах").Italic();
+                        }
+                    });
+
+                // Футер с номерами страниц
+                page.Footer()
+                    .AlignCenter()
+                    .Text(x =>
+                    {
+                        x.Span("Страница ");
+                        x.CurrentPageNumber();
+                        x.Span(" из ");
+                        x.TotalPages();
+                    });
+            });
+        })
+        .GeneratePdf(file.Path.LocalPath); // Используем LocalPath вместо AbsolutePath
+
+        await ShowMessageAsync($"PDF отчёт успешно создан!\nПуть: {file.Path.LocalPath}");
+    }
+    catch (Exception ex)
+    {
+        await ShowMessageAsync($"Ошибка при создании PDF: {ex.Message}\n\nДетали: {ex.InnerException?.Message}");
+    }
+}
         private async void GenerateRevenueReportXlsx_Click(object? sender, RoutedEventArgs e)
+{
+    try
+    {
+        var saver = this.StorageProvider;
+        var file = await saver.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            try
-            {
-                var filePicker = new FilePickerSaveOptions 
-                { 
-                    Title = "Сохранить XLSX отчёт",
-                    SuggestedFileName = $"revenue_report_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx"
-                };
-                
-                var result = await StorageProvider.SaveFilePickerAsync(filePicker);
-                if (result == null) return;
+            Title = "Сохранить отчёт по выручке",
+            SuggestedFileName = $"Выручка_{DateTime.Now:dd-MM-yyyy}.xlsx",
+            DefaultExtension = "xlsx",
+            FileTypeChoices = new[] { new FilePickerFileType("Excel") { Patterns = new[] { "*.xlsx" } } }
+        });
 
-                using var db = new AppDbContext();
-                var paidOrders = await db.Orders.Where(o => o.Status == "Paid").ToListAsync();
+        if (file == null) return;
 
-                using var workbook = new XLWorkbook();
-                var worksheet = workbook.Worksheets.Add("Выручка");
+        using var db = new AppDbContext();
+        var paidOrders = await db.Orders
+            .Where(o => o.Status == "Paid")
+            .OrderBy(o => o.PaidAt ?? o.CreatedAt)
+            .ToListAsync();
 
-                worksheet.Cell(1, 1).Value = "Отчёт по выручке";
-                worksheet.Range(1, 1, 1, 4).Merge().Style.Font.Bold = true;
-                worksheet.Cell(2, 1).Value = $"Дата формирования: {DateTime.Now:dd.MM.yyyy HH:mm}";
-                worksheet.Cell(3, 1).Value = $"Всего оплаченных заказов: {paidOrders.Count}";
-                
-                worksheet.Cell(5, 1).Value = "ID заказа";
-                worksheet.Cell(5, 2).Value = "Номер стола";
-                worksheet.Cell(5, 3).Value = "Блюда";
-                worksheet.Cell(5, 4).Value = "Способ оплаты";
-                
-                var headerRange = worksheet.Range(5, 1, 5, 4);
-                headerRange.Style.Font.Bold = true;
-                headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
-                
-                for (int i = 0; i < paidOrders.Count; i++)
-                {
-                    worksheet.Cell(i + 6, 1).Value = paidOrders[i].Id;
-                    worksheet.Cell(i + 6, 2).Value = paidOrders[i].TableNumber;
-                    worksheet.Cell(i + 6, 3).Value = paidOrders[i].Items;
-                    worksheet.Cell(i + 6, 4).Value = paidOrders[i].PaymentMethod ?? "Не указан";
-                }
-                
-                worksheet.Columns().AdjustToContents();
+        var totalRevenue = paidOrders.Sum(o => o.TotalAmount);
 
-                await using var stream = await result.OpenWriteAsync();
-                workbook.SaveAs(stream);
+        using var workbook = new ClosedXML.Excel.XLWorkbook();
+        var ws = workbook.Worksheets.Add("Выручка");
 
-                await ShowMessageAsync("XLSX-отчёт по выручке успешно сохранён.");
-            }
-            catch (Exception ex)
-            {
-                await ShowMessageAsync($"Ошибка создания XLSX-отчёта: {ex.Message}");
-            }
+        ws.Cell(1, 1).Value = "ОТЧЁТ ПО ВЫРУЧКЕ";
+        ws.Cell(1, 1).Style.Font.Bold = true;
+        ws.Cell(1, 1).Style.Font.FontSize = 16;
+
+        ws.Cell(2, 1).Value = $"Период: все заказы";
+        ws.Cell(3, 1).Value = $"Дата формирования: {DateTime.Now:dd.MM.yyyy HH:mm}";
+        ws.Cell(4, 1).Value = $"Всего оплаченных заказов: {paidOrders.Count}";
+        ws.Cell(5, 1).Value = $"ИТОГОВАЯ ВЫРУЧКА: {totalRevenue:0.00} ₽";
+        ws.Cell(5, 1).Style.Font.Bold = true;
+        ws.Cell(5, 1).Style.Font.FontSize = 14;
+        ws.Cell(5, 1).Style.Font.FontColor = ClosedXML.Excel.XLColor.Green;
+
+        ws.Cell(7, 1).Value = "№";
+        ws.Cell(7, 2).Value = "Стол";
+        ws.Cell(7, 3).Value = "Гостей";
+        ws.Cell(7, 4).Value = "Сумма";
+        ws.Cell(7, 5).Value = "Оплачен";
+
+        var row = 8;
+        int num = 1;
+        foreach (var o in paidOrders)
+        {
+            ws.Cell(row, 1).Value = num++;
+            ws.Cell(row, 2).Value = o.TableNumber;
+            ws.Cell(row, 3).Value = o.CustomersCount;
+            ws.Cell(row, 4).Value = o.TotalAmount;
+            ws.Cell(row, 4).Style.NumberFormat.Format = "#,##0.00 ₽";
+            ws.Cell(row, 5).Value = o.PaidAt?.ToString("dd.MM.yyyy HH:mm") ?? "Неизвестно";
+            row++;
         }
+
+        ws.Columns().AdjustToContents();
+
+        workbook.SaveAs(file.Path.LocalPath);
+
+        await ShowMessageAsync($"Отчёт по выручке сохранён:\n{file.Path.LocalPath}");
+    }
+    catch (Exception ex)
+    {
+        await ShowMessageAsync("Ошибка создания XLSX: " + ex.Message);
+    }
+}
 
         // === МЕТОДЫ ДЛЯ НАЗНАЧЕНИЯ СТОЛИКОВ ===
 

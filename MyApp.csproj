@@ -35,11 +35,13 @@
         <PackageReference Include="ClosedXML" Version="0.102.3" />
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.1" />
         <PackageReference Include="itext7" Version="8.0.2" />
+        <PackageReference Include="itext7.bouncy-castle-adapter" Version="9.4.0" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.10" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.10">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
+        <PackageReference Include="QuestPDF" Version="2023.12.6" />
         <PackageReference Include="ReactiveUI.Avalonia" Version="11.3.8" />
     </ItemGroup>
 </Project>

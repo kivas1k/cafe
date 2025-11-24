@@ -81,6 +81,10 @@
               "target": "Package",
               "version": "[8.0.10, )"
             },
+            "QuestPDF": {
+              "target": "Package",
+              "version": "[2023.12.6, )"
+            },
             "ReactiveUI.Avalonia": {
               "target": "Package",
               "version": "[11.3.8, )"
@@ -88,6 +92,10 @@
             "itext7": {
               "target": "Package",
               "version": "[8.0.2, )"
+            },
+            "itext7.bouncy-castle-adapter": {
+              "target": "Package",
+              "version": "[9.4.0, )"
             }
           },
           "imports": [
