@@ -1,4 +1,3 @@
-// Models/AppDbContext.cs
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -16,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<GlobalShift> GlobalShifts => Set<GlobalShift>();
     public DbSet<WaiterShift> WaiterShifts => Set<WaiterShift>();
     public DbSet<CashReceipt> CashReceipts => Set<CashReceipt>();
+    public DbSet<TableAssignment> TableAssignments => Set<TableAssignment>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -60,8 +60,6 @@ public class AppDbContext : DbContext
                         .Select(int.Parse)
                         .ToList()
             );
-
-        // Убрали конвертер для WaiterShiftIds, так как теперь используем навигационное свойство
 
         // Настройка отношений для WaiterShift
         modelBuilder.Entity<WaiterShift>()
@@ -108,12 +106,26 @@ public class AppDbContext : DbContext
             .HasForeignKey(cr => cr.OrderId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Настройка отношений для TableAssignment
+        modelBuilder.Entity<TableAssignment>()
+            .HasOne(ta => ta.Waiter)
+            .WithMany()
+            .HasForeignKey(ta => ta.WaiterId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<TableAssignment>()
+            .HasOne(ta => ta.GlobalShift)
+            .WithMany()
+            .HasForeignKey(ta => ta.GlobalShiftId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // Явное задание имен таблиц
         modelBuilder.Entity<User>().ToTable("Users");
         modelBuilder.Entity<Order>().ToTable("Orders");
         modelBuilder.Entity<GlobalShift>().ToTable("GlobalShifts");
         modelBuilder.Entity<WaiterShift>().ToTable("WaiterShifts");
         modelBuilder.Entity<CashReceipt>().ToTable("CashReceipts");
+        modelBuilder.Entity<TableAssignment>().ToTable("TableAssignments");
 
         // Настройка decimal precision для денежных полей
         modelBuilder.Entity<Order>()

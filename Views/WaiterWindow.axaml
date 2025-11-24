@@ -12,23 +12,46 @@
         <views:StatusToBrushConverter x:Key="StatusToBrushConverter"/>
     </Window.Resources>
 
-    <StackPanel Margin="20" Spacing="12">
-
-        <TextBlock Text="Работа официанта" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center"/>
+    <StackPanel Margin="20">
+        <!-- Spacing заменен на Margin для дочерних элементов -->
+        <TextBlock Text="Работа официанта" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,12"/>
 
         <!-- Панель контроля смены и кнопки -->
         <Grid ColumnDefinitions="*,*,*,auto" Margin="0,0,0,6">
             <Button x:Name="CreateOrderBtn" Content="Создать заказ" Click="CreateOrder_Click" Margin="5"/>
             <Button x:Name="PayOrderBtn" Content="Оплата" Grid.Column="1" Click="PayOrder_Click" Margin="5"/>
             <Button Content="Отчёт по смене" Grid.Column="2" Click="OpenShiftReport_Click" Margin="5"/>
-            <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
-                <TextBlock x:Name="ShiftInfoText" VerticalAlignment="Center" FontWeight="SemiBold"/>
+            <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock x:Name="ShiftInfoText" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,8,0"/>
                 <Button x:Name="ToggleShiftBtn" Content="Открыть смену" Click="ToggleShift_Click" />
             </StackPanel>
         </Grid>
 
+        <!-- Назначенные столики -->
+        <Border Background="#E3F2FD" CornerRadius="8" Padding="10" Margin="0,5" BorderBrush="#BBDEFB" BorderThickness="1">
+            <StackPanel>
+                <TextBlock Text="Мои столики:" FontWeight="Bold" Foreground="#1565C0" Margin="0,0,0,8"/>
+                <ItemsControl x:Name="AssignedTablesItemsControl">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="#2196F3" CornerRadius="15" Padding="8,4" Margin="0,0,8,0">
+                                <TextBlock Text="{Binding}" Foreground="White" FontWeight="Bold"/>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock x:Name="NoTablesText" Text="На вас не назначены столики" FontStyle="Italic" Foreground="#666" 
+                           IsVisible="{Binding Items.Count, ElementName=AssignedTablesItemsControl, Converter={StaticResource InverseBoolConverter}}"/>
+            </StackPanel>
+        </Border>
+
         <!-- СПИСОК ЗАКАЗОВ -->
-        <ListBox x:Name="OrdersListBox" Height="520" Margin="0,6,0,0"
+        <ListBox x:Name="OrdersListBox" Height="450" Margin="0,12,0,0"
                  DoubleTapped="OrdersListBox_DoubleTapped">
             <ListBox.ItemTemplate>
                 <DataTemplate DataType="{x:Type models:Order}">

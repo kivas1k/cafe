@@ -10,6 +10,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using MyApp.Services;
+using System.Collections.Generic;
 
 namespace MyApp.Views
 {
@@ -65,6 +66,8 @@ namespace MyApp.Views
                 ToggleShiftBtn.Background = Brushes.Green;
                 CreateOrderBtn.IsEnabled = false;
                 PayOrderBtn.IsEnabled = false;
+                AssignedTablesItemsControl.IsVisible = false;
+                NoTablesText.IsVisible = false;
             }
             else
             {
@@ -74,6 +77,37 @@ namespace MyApp.Views
                 ToggleShiftBtn.Background = Brushes.OrangeRed;
                 CreateOrderBtn.IsEnabled = true;
                 PayOrderBtn.IsEnabled = true;
+                AssignedTablesItemsControl.IsVisible = true;
+                _ = LoadAssignedTablesAsync(); // Загружаем назначенные столики
+            }
+        }
+
+        // Добавить метод загрузки назначенных столиков
+        private async Task LoadAssignedTablesAsync()
+        {
+            if (_activeWaiterShift?.GlobalShiftId == null)
+            {
+                AssignedTablesItemsControl.ItemsSource = Array.Empty<int>();
+                return;
+            }
+
+            try
+            {
+                using var db = new AppDbContext();
+                var assignedTables = await db.TableAssignments
+                    .Where(ta => ta.GlobalShiftId == _activeWaiterShift.GlobalShiftId && 
+                                ta.WaiterId == _currentUser.Id && 
+                                ta.IsActive)
+                    .Select(ta => ta.TableNumber)
+                    .OrderBy(t => t)
+                    .ToListAsync();
+
+                AssignedTablesItemsControl.ItemsSource = assignedTables;
+                NoTablesText.IsVisible = !assignedTables.Any();
+            }
+            catch (Exception ex)
+            {
+                await MessageBox.Show(this, $"Ошибка загрузки назначенных столиков: {ex.Message}");
             }
         }
 
@@ -211,30 +245,64 @@ namespace MyApp.Views
                 return;
             }
 
+            // Загружаем назначенные столики для проверки
+            await LoadAssignedTablesAsync();
+            var assignedTables = AssignedTablesItemsControl.ItemsSource as IEnumerable<int>;
+            var hasAssignedTables = assignedTables?.Any() ?? false;
+
             var dialog = new Window
             {
                 Title = "Новый заказ",
                 Width = 380,
-                Height = 440,
+                Height = hasAssignedTables ? 480 : 440,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
 
-            var stack = new StackPanel { Margin = new Thickness(20), Spacing = 12 };
+            var stack = new StackPanel { Margin = new Thickness(20) };
 
-            stack.Children.Add(new TextBlock { Text = "Номер стола:", FontWeight = FontWeight.SemiBold });
-            var tableBox = new NumericUpDown { Value = 1, Minimum = 1, Maximum = 50 };
+            // Если есть назначенные столики, показываем их
+            if (hasAssignedTables)
+            {
+                stack.Children.Add(new TextBlock { 
+                    Text = "Ваши назначенные столики:", 
+                    FontWeight = FontWeight.SemiBold,
+                    Foreground = Brushes.Blue,
+                    Margin = new Thickness(0,0,0,8)
+                });
+                
+                var assignedTablesList = string.Join(", ", assignedTables);
+                stack.Children.Add(new TextBlock { 
+                    Text = assignedTablesList,
+                    FontWeight = FontWeight.Bold,
+                    Foreground = Brushes.DarkBlue,
+                    Margin = new Thickness(0,0,0,8)
+                });
+                
+                stack.Children.Add(new Separator { Margin = new Thickness(0, 5, 0, 8) });
+            }
+
+            stack.Children.Add(new TextBlock { Text = "Номер стола:", FontWeight = FontWeight.SemiBold, Margin = new Thickness(0,0,0,4) });
+            var tableBox = new NumericUpDown { Value = 1, Minimum = 1, Maximum = 50, Margin = new Thickness(0,0,0,8) };
+            
+            // Если есть назначенные столики, устанавливаем первый назначенный как значение по умолчанию
+            if (hasAssignedTables)
+            {
+                var firstTable = assignedTables.First();
+                tableBox.Value = firstTable;
+            }
+            
             stack.Children.Add(tableBox);
 
-            stack.Children.Add(new TextBlock { Text = "Количество гостей:", FontWeight = FontWeight.SemiBold });
-            var guestsBox = new NumericUpDown { Value = 2, Minimum = 1, Maximum = 10 };
+            stack.Children.Add(new TextBlock { Text = "Количество гостей:", FontWeight = FontWeight.SemiBold, Margin = new Thickness(0,0,0,4) });
+            var guestsBox = new NumericUpDown { Value = 2, Minimum = 1, Maximum = 10, Margin = new Thickness(0,0,0,8) };
             stack.Children.Add(guestsBox);
 
-            stack.Children.Add(new TextBlock { Text = "Состав заказа:", FontWeight = FontWeight.SemiBold });
-            var itemsBox = new TextBox { Height = 80, AcceptsReturn = true, Text = "Кофе, пирожное" };
+            stack.Children.Add(new TextBlock { Text = "Состав заказа:", FontWeight = FontWeight.SemiBold, Margin = new Thickness(0,0,0,4) });
+            var itemsBox = new TextBox { Height = 80, AcceptsReturn = true, Text = "Кофе, пирожное", Margin = new Thickness(0,0,0,8) };
             stack.Children.Add(itemsBox);
 
-            stack.Children.Add(new TextBlock { Text = "Сумма (₽):", FontWeight = FontWeight.SemiBold });
-            var amountBox = new NumericUpDown { Value = 800, Minimum = 0, Increment = 50 };
+            stack.Children.Add(new TextBlock { Text = "Сумма (₽):", FontWeight = FontWeight.SemiBold, Margin = new Thickness(0,0,0,4) });
+            var amountBox = new NumericUpDown { Value = 800, Minimum = 0, Increment = 50, Margin = new Thickness(0,0,0,8) };
             stack.Children.Add(amountBox);
 
             var btn = new Button
@@ -248,6 +316,90 @@ namespace MyApp.Views
 
             btn.Click += async (_, __) =>
             {
+                // Проверяем, назначен ли столик официанту (если есть назначенные столики)
+                if (hasAssignedTables)
+                {
+                    var selectedTable = (int)tableBox.Value;
+                    var isTableAssigned = assignedTables.Contains(selectedTable);
+                    
+                    if (!isTableAssigned)
+                    {
+                        // Создаем кастомное диалоговое окно для подтверждения
+                        var confirmDialog = new Window
+                        {
+                            Title = "Подтверждение",
+                            Width = 350,
+                            Height = 180,
+                            WindowStartupLocation = WindowStartupLocation.CenterOwner
+                        };
+
+                        var confirmStack = new StackPanel { Margin = new Thickness(20) };
+                        
+                        confirmStack.Children.Add(new TextBlock
+                        {
+                            Text = $"Столик {selectedTable} не назначен вам.",
+                            FontWeight = FontWeight.SemiBold,
+                            Margin = new Thickness(0,0,0,10)
+                        });
+                        
+                        confirmStack.Children.Add(new TextBlock
+                        {
+                            Text = "Вы уверены, что хотите создать заказ на этот столик?",
+                            TextWrapping = TextWrapping.Wrap,
+                            Margin = new Thickness(0,0,0,20)
+                        });
+
+                        var buttonPanel = new StackPanel 
+                        { 
+                            Orientation = Orientation.Horizontal, 
+                            HorizontalAlignment = HorizontalAlignment.Center
+                        };
+
+                        var yesButton = new Button 
+                        { 
+                            Content = "Да", 
+                            Background = Brushes.Green,
+                            Foreground = Brushes.White,
+                            Width = 80,
+                            Margin = new Thickness(0,0,10,0)
+                        };
+
+                        var noButton = new Button 
+                        { 
+                            Content = "Нет", 
+                            Background = Brushes.Red,
+                            Foreground = Brushes.White,
+                            Width = 80
+                        };
+
+                        bool confirmed = false;
+
+                        yesButton.Click += (_, __) =>
+                        {
+                            confirmed = true;
+                            confirmDialog.Close();
+                        };
+
+                        noButton.Click += (_, __) =>
+                        {
+                            confirmed = false;
+                            confirmDialog.Close();
+                        };
+
+                        buttonPanel.Children.Add(yesButton);
+                        buttonPanel.Children.Add(noButton);
+                        confirmStack.Children.Add(buttonPanel);
+                        confirmDialog.Content = confirmStack;
+
+                        await confirmDialog.ShowDialog(this);
+
+                        if (!confirmed)
+                        {
+                            return;
+                        }
+                    }
+                }
+
                 var order = new Order
                 {
                     TableNumber = (int)tableBox.Value,
@@ -304,17 +456,18 @@ namespace MyApp.Views
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
 
-            var stack = new StackPanel { Margin = new Thickness(20), Spacing = 15 };
+            var stack = new StackPanel { Margin = new Thickness(20) };
 
             stack.Children.Add(new TextBlock
             {
                 Text = $"Сумма к оплате: {order.TotalAmount:C}",
                 FontSize = 18,
-                FontWeight = FontWeight.Bold
+                FontWeight = FontWeight.Bold,
+                Margin = new Thickness(0,0,0,15)
             });
 
-            var combo = new ComboBox { ItemsSource = new[] { "Наличные", "Карта" }, SelectedIndex = 0 };
-            stack.Children.Add(new TextBlock { Text = "Способ оплаты:" });
+            stack.Children.Add(new TextBlock { Text = "Способ оплаты:", Margin = new Thickness(0,0,0,4) });
+            var combo = new ComboBox { ItemsSource = new[] { "Наличные", "Карта" }, SelectedIndex = 0, Margin = new Thickness(0,0,0,15) };
             stack.Children.Add(combo);
 
             var payBtn = new Button

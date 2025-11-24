@@ -44,6 +44,96 @@
             </StackPanel>
         </TabItem>
 
+        <TabItem Header="Назначение столиков">
+            <StackPanel Spacing="10" Margin="10">
+                <Grid ColumnDefinitions="*,*">
+                    <StackPanel Margin="0,0,5,0">
+                        <TextBlock Text="Выберите смену:" FontWeight="SemiBold"/>
+                        <ListBox x:Name="TableAssignmentShiftsListBox" Height="120">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="{x:Type views:ShiftDisplayItem}">
+                                    <Border BorderBrush="LightGray" BorderThickness="1" CornerRadius="5" Padding="8" Margin="2">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                    
+                    <StackPanel Grid.Column="1" Margin="5,0,0,0">
+                        <TextBlock Text="Выберите официанта:" FontWeight="SemiBold"/>
+                        <ListBox x:Name="TableAssignmentWaitersListBox" Height="120">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="{x:Type models:User}">
+                                    <Border BorderBrush="LightGray" BorderThickness="1" CornerRadius="5" Padding="8" Margin="2">
+                                        <TextBlock Text="{Binding FullName}" FontWeight="SemiBold"/>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </Grid>
+
+                <!-- ИСПРАВЛЕННЫЙ БЛОК ДЛЯ ВЫБОРА СТОЛИКА -->
+                <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="5" Padding="15" Background="#F8F9FA">
+                    <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                        <StackPanel Grid.Column="0" Margin="0,0,15,0">
+                            <TextBlock Text="Номер столика:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                            <NumericUpDown x:Name="TableNumberBox" Minimum="1" Maximum="50" Value="1" Width="100" 
+                                          FontSize="14" FontWeight="Bold" HorizontalAlignment="Left"/>
+                        </StackPanel>
+                        
+                        <Button Grid.Column="1" 
+                                Content="Назначить столик" 
+                                Click="AssignTable_Click"
+                                Background="#1976D2"
+                                Foreground="White"
+                                FontWeight="Bold"
+                                Height="40"
+                                Width="180"
+                                Margin="10,0"
+                                HorizontalAlignment="Center"/>
+                        
+                        <Button Grid.Column="2" 
+                                Content="Снять назначение" 
+                                Click="UnassignTable_Click"
+                                Background="#FF3B30"
+                                Foreground="White"
+                                FontWeight="Bold"
+                                Height="40"
+                                Width="180"
+                                Margin="10,0,0,0"
+                                HorizontalAlignment="Right"/>
+                    </Grid>
+                </Border>
+
+                <TextBlock Text="Текущие назначения столиков:" FontWeight="SemiBold" FontSize="16"/>
+                <ListBox x:Name="TableAssignmentsListBox" Height="200">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type models:TableAssignment}">
+                            <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="5" Padding="10" Margin="2" Background="#FAFAFA">
+                                <Grid ColumnDefinitions="80,*,150">
+                                    <TextBlock Grid.Column="0" 
+                                               Text="{Binding TableNumber, StringFormat=Стол {0}}"
+                                               FontWeight="Bold"
+                                               FontSize="14"/>
+                                    <TextBlock Grid.Column="1" 
+                                               Text="{Binding WaiterName}"
+                                               FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Column="2" 
+                                               Text="{Binding AssignedAt, StringFormat='Назначен: {0:HH:mm}'}"
+                                               Foreground="#666"
+                                               HorizontalAlignment="Right"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                
+                <TextBlock x:Name="TableAssignmentInfoText" Text="Выберите смену и официанта для назначения столиков."/>
+            </StackPanel>
+        </TabItem>
+
         <TabItem Header="Заказы">
             <StackPanel Spacing="10" Margin="10">
                 <ListBox x:Name="OrdersListBox" Height="380">

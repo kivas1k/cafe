@@ -22,6 +22,7 @@ namespace MyApp.Views
         private readonly AvaloniaList<User> _employees = new();
         private readonly AvaloniaList<ShiftDisplayItem> _shiftDisplayItems = new();
         private readonly AvaloniaList<Order> _orders = new();
+        private readonly AvaloniaList<TableAssignment> _tableAssignments = new();
 
         public AdminWindow(User user)
         {
@@ -31,6 +32,9 @@ namespace MyApp.Views
             EmployeesListBox.ItemsSource = _employees;
             ShiftsListBox.ItemsSource = _shiftDisplayItems;
             OrdersListBox.ItemsSource = _orders;
+            TableAssignmentsListBox.ItemsSource = _tableAssignments;
+
+            TableAssignmentShiftsListBox.SelectionChanged += TableAssignmentShiftsListBox_SelectionChanged;
 
             this.Loaded += async (s, e) => await LoadDataAsync();
         }
@@ -39,14 +43,14 @@ namespace MyApp.Views
         {
             try
             {
-                await Task.Run(() =>
+                await Task.Run(async () =>
                 {
                     using var db = new AppDbContext();
-                    var users = db.Users.Where(u => !u.IsFired).ToList();
-                    var orders = db.Orders.ToList();
-                    var shifts = db.GlobalShifts.ToList();
+                    var users = await db.Users.Where(u => !u.IsFired).ToListAsync();
+                    var orders = await db.Orders.ToListAsync();
+                    var shifts = await db.GlobalShifts.ToListAsync();
 
-                    Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                     {
                         _employees.Clear();
                         _employees.AddRange(users);
@@ -54,6 +58,8 @@ namespace MyApp.Views
                         _orders.AddRange(orders);
                         _shiftDisplayItems.Clear();
                         _shiftDisplayItems.AddRange(shifts.Select(s => new ShiftDisplayItem(s)));
+                        
+                        TableAssignmentShiftsListBox.ItemsSource = _shiftDisplayItems;
                     });
                 });
             }
@@ -487,6 +493,164 @@ namespace MyApp.Views
             catch (Exception ex)
             {
                 await ShowMessageAsync($"Ошибка создания XLSX-отчёта: {ex.Message}");
+            }
+        }
+
+        // === МЕТОДЫ ДЛЯ НАЗНАЧЕНИЯ СТОЛИКОВ ===
+
+        private async void AssignTable_Click(object? sender, RoutedEventArgs e)
+        {
+            // ДЛЯ ОТЛАДКИ - проверяем значения
+            Console.WriteLine($"TableNumberBox Value: {TableNumberBox.Value}");
+            
+            if (TableAssignmentShiftsListBox.SelectedItem is not ShiftDisplayItem selectedShift)
+            {
+                await ShowMessageAsync("Выберите смену для назначения.");
+                return;
+            }
+
+            if (TableAssignmentWaitersListBox.SelectedItem is not User selectedWaiter)
+            {
+                await ShowMessageAsync("Выберите официанта для назначения.");
+                return;
+            }
+
+            if (selectedWaiter.Role != "Waiter")
+            {
+                await ShowMessageAsync("Можно назначать только официантов на столики.");
+                return;
+            }
+
+            var tableNumber = (int)TableNumberBox.Value;
+
+            try
+            {
+                using var db = new AppDbContext();
+                
+                var existingAssignment = await db.TableAssignments
+                    .FirstOrDefaultAsync(ta => 
+                        ta.GlobalShiftId == selectedShift.Id && 
+                        ta.TableNumber == tableNumber &&
+                        ta.IsActive);
+
+                if (existingAssignment != null)
+                {
+                    await ShowMessageAsync($"Столик {tableNumber} уже назначен официанту {existingAssignment.WaiterName}.");
+                    return;
+                }
+
+                var assignment = new TableAssignment
+                {
+                    TableNumber = tableNumber,
+                    WaiterId = selectedWaiter.Id,
+                    GlobalShiftId = selectedShift.Id,
+                    AssignedAt = DateTime.Now,
+                    IsActive = true
+                };
+
+                db.TableAssignments.Add(assignment);
+                await db.SaveChangesAsync();
+
+                await LoadTableAssignmentsAsync(selectedShift.Id);
+                await ShowMessageAsync($"Столик {tableNumber} назначен официанту {selectedWaiter.FullName}.");
+            }
+            catch (Exception ex)
+            {
+                await ShowMessageAsync($"Ошибка назначения столика: {ex.Message}");
+            }
+        }
+
+        private async void UnassignTable_Click(object? sender, RoutedEventArgs e)
+        {
+            if (TableAssignmentsListBox.SelectedItem is not TableAssignment selectedAssignment)
+            {
+                await ShowMessageAsync("Выберите назначение для снятия.");
+                return;
+            }
+
+            try
+            {
+                using var db = new AppDbContext();
+                selectedAssignment.IsActive = false;
+                db.TableAssignments.Update(selectedAssignment);
+                await db.SaveChangesAsync();
+
+                await LoadTableAssignmentsAsync(selectedAssignment.GlobalShiftId);
+                await ShowMessageAsync($"Назначение столика {selectedAssignment.TableNumber} снято.");
+            }
+            catch (Exception ex)
+            {
+                await ShowMessageAsync($"Ошибка снятия назначения: {ex.Message}");
+            }
+        }
+
+        private async void TableAssignmentShiftsListBox_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+        {
+            if (TableAssignmentShiftsListBox.SelectedItem is ShiftDisplayItem selectedShift)
+            {
+                await LoadWaitersForShiftAsync(selectedShift.Id);
+                await LoadTableAssignmentsAsync(selectedShift.Id);
+                
+                TableAssignmentInfoText.Text = $"Назначения для смены: {selectedShift.Name}";
+            }
+            else
+            {
+                TableAssignmentWaitersListBox.ItemsSource = null;
+                _tableAssignments.Clear();
+                TableAssignmentInfoText.Text = "Выберите смену и официанта для назначения столиков.";
+            }
+        }
+
+        private async Task LoadWaitersForShiftAsync(int shiftId)
+        {
+            try
+            {
+                using var db = new AppDbContext();
+        
+                var shift = await db.GlobalShifts
+                    .FirstOrDefaultAsync(gs => gs.Id == shiftId);
+
+                if (shift != null)
+                {
+                    var allUsers = await db.Users
+                        .Where(u => !u.IsFired)
+                        .ToListAsync();
+
+                    var waiters = allUsers
+                        .Where(u => u.Role == "Waiter" && shift.EmployeeIds.Contains(u.Id))
+                        .ToList();
+
+                    TableAssignmentWaitersListBox.ItemsSource = waiters;
+            
+                    if (!waiters.Any())
+                    {
+                        TableAssignmentInfoText.Text = $"В смене «{shift.Name}» нет назначенных официантов.";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                await ShowMessageAsync($"Ошибка загрузки официантов: {ex.Message}");
+            }
+        }
+
+        private async Task LoadTableAssignmentsAsync(int shiftId)
+        {
+            try
+            {
+                using var db = new AppDbContext();
+                var assignments = await db.TableAssignments
+                    .Include(ta => ta.Waiter)
+                    .Where(ta => ta.GlobalShiftId == shiftId && ta.IsActive)
+                    .OrderBy(ta => ta.TableNumber)
+                    .ToListAsync();
+
+                _tableAssignments.Clear();
+                _tableAssignments.AddRange(assignments);
+            }
+            catch (Exception ex)
+            {
+                await ShowMessageAsync($"Ошибка загрузки назначений: {ex.Message}");
             }
         }
 
