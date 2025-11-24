@@ -360,30 +360,29 @@ namespace MyApp.Views
 
         private async void EditOrder_Click(object? sender, RoutedEventArgs e)
         {
-            if (OrdersListBox.SelectedItem is not Order selectedOrder)
+            if (OrdersListBox.SelectedItem is not Order order)
             {
-                await ShowMessageAsync("Выберите заказ для редактирования.");
+                await ShowMessageAsync("Выберите заказ для редактирования");
                 return;
             }
 
-            if (selectedOrder.Status == "Paid")
+            if (order.Status == "Paid")
             {
-                await ShowMessageAsync("Нельзя редактировать оплаченный заказ.");
+                await ShowMessageAsync("Оплаченные заказы нельзя редактировать");
                 return;
             }
 
-            try
+            var editWindow = new OrderSimpleEditWindow(order);
+            await editWindow.ShowDialog(this);
+
+            if (editWindow.WasSaved)
             {
-                selectedOrder.Status = "Edited";
                 using var db = new AppDbContext();
-                db.Orders.Update(selectedOrder);
+                db.Orders.Update(order);
                 await db.SaveChangesAsync();
+
                 await LoadDataAsync();
-                await ShowMessageAsync("Заказ отредактирован.");
-            }
-            catch (Exception ex)
-            {
-                await ShowMessageAsync($"Ошибка редактирования заказа: {ex.Message}");
+                await ShowMessageAsync("Заказ успешно изменён!");
             }
         }
 

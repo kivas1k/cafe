@@ -1,0 +1,30 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="MyApp.Views.OrderSimpleEditWindow"
+        Title="Редактировать заказ"
+        Width="480" Height="520"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+
+    <StackPanel Margin="20" Spacing="15">
+        <TextBlock Text="Редактирование заказа" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
+
+        <TextBlock Text="Стол:" FontWeight="SemiBold"/>
+        <TextBlock x:Name="TableNumberText" FontWeight="Bold" FontSize="18" Foreground="#1565C0"/>
+
+        <TextBlock Text="Количество гостей:" FontWeight="SemiBold"/>
+        <TextBox x:Name="CustomersCountBox" Watermark="Например: 4"/>
+
+        <TextBlock Text="Состав заказа:" FontWeight="SemiBold"/>
+        <TextBox x:Name="ItemsBox" Height="140" AcceptsReturn="True" TextWrapping="Wrap"/>
+
+        <TextBlock Text="Итоговая сумма (₽):" FontWeight="SemiBold"/>
+        <TextBox x:Name="TotalAmountBox" Watermark="0.00"/>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="15" Margin="0,20">
+            <Button Content="Отмена" Click="Cancel_Click" Width="100"/>
+            <Button Content="Сохранить" Click="Save_Click" 
+                    Background="#1976D2" Foreground="White" Width="120" FontWeight="Bold"/>
+        </StackPanel>
+    </StackPanel>
+</Window>
