@@ -1,0 +1,14 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="MyApp.Views.WaiterReportWindow"
+        Title="Отчёт официанта"
+        Width="640" Height="520">
+    <StackPanel Margin="16" Spacing="12">
+        <TextBlock x:Name="TitleText" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
+        <TextBlock x:Name="ShiftInfoText" HorizontalAlignment="Center"/>
+        <ScrollViewer>
+            <StackPanel x:Name="ContentPanel" Spacing="8" />
+        </ScrollViewer>
+        <Button Content="Закрыть" HorizontalAlignment="Right" Click="Close_Click"/>
+    </StackPanel>
+</Window>

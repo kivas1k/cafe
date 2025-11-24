@@ -44,7 +44,7 @@ namespace MyApp.Views
                     using var db = new AppDbContext();
                     var users = db.Users.Where(u => !u.IsFired).ToList();
                     var orders = db.Orders.ToList();
-                    var shifts = db.Shifts.ToList();
+                    var shifts = db.GlobalShifts.ToList();
 
                     Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                     {
@@ -141,22 +141,25 @@ namespace MyApp.Views
                 using var db = new AppDbContext();
                 var createdShifts = new List<string>();
 
-                for (int i = 1; i <= 5; i++)
+                var today = DateTime.Today;
+
+                for (int i = 0; i < 5; i++)
                 {
-                    var shiftDate = DateTime.Now.AddDays(i);
+                    var shiftDate = today.AddDays(i);
                     string shiftName = $"Смена на {shiftDate:dd.MM.yyyy}";
                     
-                    bool shiftExists = await db.Shifts.AnyAsync(s => s.Name == shiftName);
+                    bool shiftExists = await db.GlobalShifts.AnyAsync(s => s.Name == shiftName);
                     if (!shiftExists)
                     {
-                        var newShift = new Shift 
+                        var newShift = new GlobalShift 
                         { 
                             Name = shiftName,
                             Date = shiftDate, 
-                            EmployeeIds = new List<int>() 
+                            EmployeeIds = new List<int>(),
+                            IsActive = true
                         };
                         
-                        db.Shifts.Add(newShift);
+                        db.GlobalShifts.Add(newShift);
                         createdShifts.Add(shiftName);
                     }
                 }
@@ -200,7 +203,7 @@ namespace MyApp.Views
             try
             {
                 using var db = new AppDbContext();
-                db.Shifts.Remove(selectedShift);
+                db.GlobalShifts.Remove(selectedShift);
                 await db.SaveChangesAsync();
                 await LoadDataAsync();
                 await ShowMessageAsync($"Смена «{selectedShift.Name}» успешно удалена.");
@@ -228,7 +231,7 @@ namespace MyApp.Views
             try
             {
                 using var db = new AppDbContext();
-                var shift = await db.Shifts.FirstOrDefaultAsync(s => s.Id == selectedShiftItem.Id);
+                var shift = await db.GlobalShifts.FirstOrDefaultAsync(s => s.Id == selectedShiftItem.Id);
                 if (shift == null) return;
                 
                 if (shift.EmployeeIds.Contains(selectedUser.Id))
@@ -244,7 +247,7 @@ namespace MyApp.Views
                 }
                 
                 shift.EmployeeIds.Add(selectedUser.Id);
-                db.Shifts.Update(shift);
+                db.GlobalShifts.Update(shift);
                 await db.SaveChangesAsync();
                 await LoadDataAsync();
         
@@ -279,7 +282,7 @@ namespace MyApp.Views
             try
             {
                 using var db = new AppDbContext();
-                var shift = await db.Shifts.FirstOrDefaultAsync(s => s.Id == selectedShiftItem.Id);
+                var shift = await db.GlobalShifts.FirstOrDefaultAsync(s => s.Id == selectedShiftItem.Id);
                 if (shift == null) return;
                 
                 if (!shift.EmployeeIds.Contains(selectedUser.Id))
@@ -297,7 +300,7 @@ namespace MyApp.Views
                 if (!confirm) return;
                 
                 shift.EmployeeIds.Remove(selectedUser.Id);
-                db.Shifts.Update(shift);
+                db.GlobalShifts.Update(shift);
                 await db.SaveChangesAsync();
                 await LoadDataAsync();
                 

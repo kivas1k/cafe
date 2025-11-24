@@ -17,24 +17,77 @@ namespace MyApp.Views
     {
         private readonly User _currentUser;
         private readonly AvaloniaList<Order> _orders = new();
+        private WaiterShift? _activeWaiterShift;
 
         public WaiterWindow(User user)
         {
-            InitializeComponent();
-            _currentUser = user;
+            try
+            {
+                InitializeComponent();
+                _currentUser = user;
+                OrdersListBox.ItemsSource = _orders;
+                this.Opened += async (_, __) => await InitializeShiftAndLoadAsync();
+            }
+            catch (Exception ex)
+            {
+                _ = MessageBox.Show(this, $"Ошибка при создании окна официанта: {ex.Message}");
+            }
+        }
 
-            OrdersListBox.ItemsSource = _orders;
+        private async Task InitializeShiftAndLoadAsync()
+        {
+            await LoadActiveWaiterShiftAsync();
+            await LoadOrdersAsync();
+            UpdateShiftInfoUi();
+        }
 
-            this.Opened += async (_, __) => await LoadOrdersAsync();
+        private async Task LoadActiveWaiterShiftAsync()
+        {
+            try
+            {
+                using var db = new AppDbContext();
+                _activeWaiterShift = await db.WaiterShifts
+                    .Include(ws => ws.Orders)
+                    .FirstOrDefaultAsync(s => s.WaiterId == _currentUser.Id && s.EndAt == null);
+            }
+            catch (Exception ex)
+            {
+                await MessageBox.Show(this, $"Ошибка при загрузке смены: {ex.Message}");
+            }
+        }
+
+        private void UpdateShiftInfoUi()
+        {
+            if (_activeWaiterShift == null)
+            {
+                ShiftInfoText.Text = "Смена: не активна";
+                ToggleShiftBtn.Content = "Открыть смену";
+                ToggleShiftBtn.Background = Brushes.Green;
+                CreateOrderBtn.IsEnabled = false;
+                PayOrderBtn.IsEnabled = false;
+            }
+            else
+            {
+                var duration = _activeWaiterShift.Duration;
+                ShiftInfoText.Text = $"Смена: {_activeWaiterShift.StartAt:HH:mm} (Открыта {duration.Hours}ч {duration.Minutes}м)";
+                ToggleShiftBtn.Content = "Закрыть смену";
+                ToggleShiftBtn.Background = Brushes.OrangeRed;
+                CreateOrderBtn.IsEnabled = true;
+                PayOrderBtn.IsEnabled = true;
+            }
         }
 
         private async Task LoadOrdersAsync()
         {
-            using var db = new AppDbContext();
-            var today = DateTime.Today;
+            if (_activeWaiterShift == null)
+            {
+                _orders.Clear();
+                return;
+            }
 
+            using var db = new AppDbContext();
             var orders = await db.Orders
-                .Where(o => o.WaiterId == _currentUser.Id && o.CreatedAt.Date == today)
+                .Where(o => o.WaiterShiftId == _activeWaiterShift.Id)
                 .OrderByDescending(o => o.CreatedAt)
                 .ToListAsync();
 
@@ -42,8 +95,122 @@ namespace MyApp.Views
             _orders.AddRange(orders);
         }
 
+        private async Task<bool> IsUserInTodayGlobalShiftAsync()
+        {
+            try
+            {
+                using var db = new AppDbContext();
+                var today = DateTime.Today;
+                
+                // Ищем активную глобальную смену на сегодня
+                var todayGlobalShift = await db.GlobalShifts
+                    .FirstOrDefaultAsync(gs => gs.Date.Date == today && gs.IsActive);
+
+                if (todayGlobalShift == null)
+                {
+                    await MessageBox.Show(this, 
+                        "На сегодня нет активной глобальной смены.\nОбратитесь к администратору.");
+                    return false;
+                }
+
+                // Проверяем, есть ли текущий пользователь в списке сотрудников глобальной смены
+                if (!todayGlobalShift.EmployeeIds.Contains(_currentUser.Id))
+                {
+                    await MessageBox.Show(this, 
+                        $"Вы не назначены в смену на сегодня.\n" +
+                        $"Смена: {todayGlobalShift.Name}\n" +
+                        $"Обратитесь к администратору для добавления в смену.");
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await MessageBox.Show(this, $"Ошибка при проверке смены: {ex.Message}");
+                return false;
+            }
+        }
+
+        private async void ToggleShift_Click(object? sender, RoutedEventArgs e)
+        {
+            using var db = new AppDbContext();
+
+            if (_activeWaiterShift == null)
+            {
+                // ОТКРЫТИЕ НОВОЙ СМЕНЫ - проверяем наличие в глобальной смене
+                bool canOpenShift = await IsUserInTodayGlobalShiftAsync();
+                if (!canOpenShift)
+                {
+                    return; // Нельзя открыть смену - пользователь не в глобальной смене
+                }
+
+                // Получаем глобальную смену для привязки
+                var today = DateTime.Today;
+                var todayGlobalShift = await db.GlobalShifts
+                    .FirstOrDefaultAsync(gs => gs.Date.Date == today && gs.IsActive);
+
+                if (todayGlobalShift == null)
+                {
+                    await MessageBox.Show(this, "Не найдена активная глобальная смена на сегодня.");
+                    return;
+                }
+
+                var newShift = new WaiterShift
+                {
+                    WaiterId = _currentUser.Id,
+                    Name = $"Смена {_currentUser.FullName} {DateTime.Now:dd.MM.yyyy HH:mm}",
+                    StartAt = DateTime.Now,
+                    GlobalShiftId = todayGlobalShift.Id // Привязываем к глобальной смене
+                };
+
+                db.WaiterShifts.Add(newShift);
+                await db.SaveChangesAsync();
+                
+                _activeWaiterShift = newShift;
+                await MessageBox.Show(this, "Смена открыта!");
+            }
+            else
+            {
+                // ЗАКРЫТИЕ ТЕКУЩЕЙ СМЕНЫ
+                _activeWaiterShift.EndAt = DateTime.Now;
+                
+                // Рассчитываем итоги смены
+                var shiftOrders = await db.Orders
+                    .Where(o => o.WaiterShiftId == _activeWaiterShift.Id && o.Status == "Paid")
+                    .ToListAsync();
+
+                _activeWaiterShift.TotalRevenue = shiftOrders.Sum(o => o.TotalAmount);
+                _activeWaiterShift.CashRevenue = shiftOrders
+                    .Where(o => o.PaymentMethod == "Cash")
+                    .Sum(o => o.TotalAmount);
+                _activeWaiterShift.CardRevenue = shiftOrders
+                    .Where(o => o.PaymentMethod == "Card")
+                    .Sum(o => o.TotalAmount);
+
+                db.WaiterShifts.Update(_activeWaiterShift);
+                await db.SaveChangesAsync();
+                
+                await MessageBox.Show(this, 
+                    $"Смена закрыта!\n" +
+                    $"Заказов: {shiftOrders.Count}\n" +
+                    $"Выручка: {_activeWaiterShift.TotalRevenue:C}");
+                
+                _activeWaiterShift = null;
+            }
+
+            await LoadOrdersAsync();
+            UpdateShiftInfoUi();
+        }
+
         private async void CreateOrder_Click(object? sender, RoutedEventArgs e)
         {
+            if (_activeWaiterShift == null)
+            {
+                await MessageBox.Show(this, "Сначала откройте смену!");
+                return;
+            }
+
             var dialog = new Window
             {
                 Title = "Новый заказ",
@@ -88,8 +255,9 @@ namespace MyApp.Views
                     Items = itemsBox.Text ?? "",
                     TotalAmount = (decimal)amountBox.Value,
                     WaiterId = _currentUser.Id,
+                    WaiterShiftId = _activeWaiterShift!.Id,
                     CreatedAt = DateTime.Now,
-                    Status = "New"
+                    Status = "Accepted"
                 };
 
                 using var db = new AppDbContext();
@@ -106,28 +274,25 @@ namespace MyApp.Views
             await dialog.ShowDialog(this);
         }
 
-        private async void ChangeStatus_Click(object? sender, RoutedEventArgs e)
+        private async void OrdersListBox_DoubleTapped(object? sender, RoutedEventArgs e)
         {
             if (OrdersListBox.SelectedItem is not Order order) return;
-            if (order.Status == "Paid")
-            {
-                await MessageBox.Show(this, "Оплаченный заказ нельзя менять.");
-                return;
-            }
-
-            order.Status = order.Status == "New" ? "Accepted" : "New";
-
-            using var db = new AppDbContext();
-            db.Orders.Update(order);
-            await db.SaveChangesAsync();
-            await LoadOrdersAsync();
+            
+            var orderEditWindow = new OrderEditWindow(order, async () => await LoadOrdersAsync());
+            await orderEditWindow.ShowDialog(this);
         }
 
         private async void PayOrder_Click(object? sender, RoutedEventArgs e)
         {
-            if (OrdersListBox.SelectedItem is not Order order || order.Status == "Paid")
+            if (OrdersListBox.SelectedItem is not Order order)
             {
-                await MessageBox.Show(this, "Выберите неоплаченный заказ.");
+                await MessageBox.Show(this, "Выберите заказ для оплаты.");
+                return;
+            }
+
+            if (order.Status == "Paid")
+            {
+                await MessageBox.Show(this, "Заказ уже оплачен.");
                 return;
             }
 
@@ -173,7 +338,7 @@ namespace MyApp.Views
                 var receipt = new CashReceipt
                 {
                     OrderId = order.Id,
-                    Amount = order.TotalAmount ?? 0,
+                    Amount = order.TotalAmount,
                     PaymentMethod = method,
                     CreatedAt = DateTime.Now,
                     WaiterId = _currentUser.Id
@@ -194,35 +359,16 @@ namespace MyApp.Views
             await win.ShowDialog(this);
         }
 
-        private async void GenerateReport_Click(object? sender, RoutedEventArgs e)
+        private async void OpenShiftReport_Click(object? sender, RoutedEventArgs e)
         {
-            using var db = new AppDbContext();
-            var today = DateTime.Today;
+            if (_activeWaiterShift == null)
+            {
+                await MessageBox.Show(this, "Нет активной смены для отчёта.");
+                return;
+            }
 
-            var orders = await db.Orders
-                .Where(o => o.WaiterId == _currentUser.Id && o.CreatedAt.Date == today)
-                .ToListAsync();
-
-            var paid = orders.Where(o => o.Status == "Paid").ToList();
-            var cash = paid.Where(o => o.PaymentMethod == "Cash").Sum(o => o.TotalAmount ?? 0);
-            var card = paid.Where(o => o.PaymentMethod == "Card").Sum(o => o.TotalAmount ?? 0);
-            var total = cash + card;
-
-            var win = new Window { Title = "Отчёт по смене", Width = 520, Height = 460 };
-            var stack = new StackPanel { Margin = new Thickness(25), Spacing = 12 };
-
-            stack.Children.Add(new TextBlock { Text = "ОТЧЁТ ОФИЦИАНТА", FontSize = 22, FontWeight = FontWeight.Bold, HorizontalAlignment = HorizontalAlignment.Center });
-            stack.Children.Add(new TextBlock { Text = _currentUser.FullName, HorizontalAlignment = HorizontalAlignment.Center });
-            stack.Children.Add(new TextBlock { Text = today.ToString("dd.MM.yyyy"), HorizontalAlignment = HorizontalAlignment.Center });
-            stack.Children.Add(new TextBlock { Text = new string('═', 35), HorizontalAlignment = HorizontalAlignment.Center });
-            stack.Children.Add(new TextBlock { Text = $"Заказов за смену: {orders.Count}" });
-            stack.Children.Add(new TextBlock { Text = $"Оплачено заказов: {paid.Count}" });
-            stack.Children.Add(new TextBlock { Text = $"Наличные: {cash:C}" });
-            stack.Children.Add(new TextBlock { Text = $"Карта: {card:C}" });
-            stack.Children.Add(new TextBlock { Text = $"ИТОГО ВЫРУЧКА: {total:C}", FontSize = 18, FontWeight = FontWeight.Bold });
-
-            win.Content = new ScrollViewer { Content = stack };
-            await win.ShowDialog(this);
+            var reportWin = new WaiterReportWindow(_currentUser.Id, _activeWaiterShift.Id);
+            await reportWin.ShowDialog(this);
         }
     }
 }

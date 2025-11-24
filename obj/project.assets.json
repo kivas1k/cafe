@@ -9780,11 +9780,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\user\\RiderProjects\\MyApp\\MyApp.csproj",
+      "projectUniqueName": "C:\\Users\\user\\RiderProjects\\cafe\\MyApp.csproj",
       "projectName": "MyApp",
-      "projectPath": "C:\\Users\\user\\RiderProjects\\MyApp\\MyApp.csproj",
+      "projectPath": "C:\\Users\\user\\RiderProjects\\cafe\\MyApp.csproj",
       "packagesPath": "C:\\Users\\user\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\user\\RiderProjects\\MyApp\\obj\\",
+      "outputPath": "C:\\Users\\user\\RiderProjects\\cafe\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\user\\AppData\\Roaming\\NuGet\\NuGet.Config"
